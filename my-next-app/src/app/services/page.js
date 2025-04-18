@@ -16,28 +16,29 @@ export default function Services() {
       title: "Web Development",
       description: "Custom websites built with cutting-edge technologies that deliver exceptional user experiences tailored to your business needs.",
       icon: "💻",
-      image: "/images/web-development.jpg" // Add your image path
+      image: "/images/portfolio/5.jpg",
+       
     },
     {
       id: 2,
       title: "Mobile App Development",
       description: "Native and cross-platform mobile applications that bring your ideas to life on iOS and Android platforms.",
       icon: "📱",
-      image: "/images/mobile-app.jpg" // Add your image path
+      image:  "/images/portfolio/5.jpg",// Add your image path
     },
     {
       id: 3,
       title: "UI/UX Design",
       description: "User-centered design solutions that enhance usability and create visually appealing interfaces that engage your audience.",
       icon: "🎨",
-      image: "/images/ui-ux-design.jpg" // Add your image path
+      image:  "/images/portfolio/5.jpg", // Add your image path
     },
     {
       id: 4,
       title: "Digital Marketing",
       description: "Strategic marketing campaigns to increase your online presence and reach your target audience effectively.",
       icon: "📈",
-      image: "/images/digital-marketing.jpg" // Add your image path
+      image:  "/images/portfolio/5.jpg", // Add your image path
     }
   ];
 

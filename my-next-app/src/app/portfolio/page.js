@@ -74,7 +74,7 @@ export default function Portfolio() {
       <section className="h-screen w-full relative">
         <div className="relative w-full h-full">
           <Image
-            src="/images/hero.jpg" // Replace with your actual image path
+            src="/images/Hero.jpg" // Replace with your actual image path
             alt="Portfolio Hero Image"
             fill
             priority
