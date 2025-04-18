@@ -2,69 +2,101 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export default function Services() {
-  const [visibleCardIndex, setVisibleCardIndex] = useState(null);
-  const serviceRefs = useRef([]);
+  const sectionRef = useRef(null);
+  const cardsRef = useRef(null);
+  const cardElements = useRef([]);
   
   const services = [
     {
       id: 1,
       title: "Web Development",
       description: "Custom websites built with cutting-edge technologies that deliver exceptional user experiences tailored to your business needs.",
-      icon: "💻"
+      icon: "💻",
+      image: "/images/web-development.jpg" // Add your image path
     },
     {
       id: 2,
       title: "Mobile App Development",
       description: "Native and cross-platform mobile applications that bring your ideas to life on iOS and Android platforms.",
-      icon: "📱"
+      icon: "📱",
+      image: "/images/mobile-app.jpg" // Add your image path
     },
     {
       id: 3,
       title: "UI/UX Design",
       description: "User-centered design solutions that enhance usability and create visually appealing interfaces that engage your audience.",
-      icon: "🎨"
+      icon: "🎨",
+      image: "/images/ui-ux-design.jpg" // Add your image path
     },
     {
       id: 4,
       title: "Digital Marketing",
       description: "Strategic marketing campaigns to increase your online presence and reach your target audience effectively.",
-      icon: "📈"
+      icon: "📈",
+      image: "/images/digital-marketing.jpg" // Add your image path
     }
   ];
 
   useEffect(() => {
-    const options = {
-      root: null,
-      rootMargin: '-100px 0px',
-      threshold: 0.6,
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const index = Number(entry.target.dataset.index);
-          setVisibleCardIndex(index);
-        }
-      });
-    }, options);
-
-    serviceRefs.current.forEach(ref => {
-      if (ref) observer.observe(ref);
-    });
-
-    return () => {
-      serviceRefs.current.forEach(ref => {
-        if (ref) observer.unobserve(ref);
-      });
-    };
-  }, []);
+    // Initialize refs array
+    cardElements.current = cardElements.current.slice(0, services.length);
+    
+    // Register GSAP plugins
+    if (typeof window !== 'undefined') {
+      gsap.registerPlugin(ScrollTrigger);
+      
+      // Make sure all elements are rendered
+      setTimeout(() => {
+        const cards = cardElements.current;
+        if (!cards || !cards.length || !sectionRef.current) return;
+        
+        // Set initial styles for cards
+        gsap.set(cards.slice(1), { y: "100%", opacity: 0 });
+        
+        // Create ScrollTrigger for each card (except first)
+        cards.forEach((card, index) => {
+          if (index === 0) return; // Skip first card
+          
+          ScrollTrigger.create({
+            trigger: sectionRef.current,
+            start: `top+=${index * 200} center`, // Adjust trigger points for each card
+            end: `top+=${(index + 1) * 200} center`,
+            onEnter: () => {
+              // Set z-index higher than previous cards before animating
+              gsap.set(card, { zIndex: index + 10 });
+              gsap.to(card, { 
+                y: `${index * 30}px`, 
+                opacity: 1, 
+                duration: 0.5,
+                ease: "power2.out"
+              });
+            },
+            onLeaveBack: () => {
+              gsap.to(card, { 
+                y: "100%", 
+                opacity: 0, 
+                duration: 0.5,
+                ease: "power2.in"
+              });
+            }
+          });
+        });
+      }, 100);
+      
+      return () => {
+        ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+      };
+    }
+  }, [services.length]);
 
   return (
     <div className="overflow-x-hidden">
       {/* Heading Section First */}
-      <section className=" py-32 text-center text-white">
+      <section className="py-32 text-center bg-zinc-900 text-white">
         <div className="container mx-auto px-4">
           <h1 className="text-5xl md:text-6xl font-bold mb-8">Our Services</h1>
           <p className="text-xl max-w-2xl mx-auto">
@@ -86,42 +118,53 @@ export default function Services() {
         </div>
       </section>
 
-      {/* Services Cards Section */}
-      {/* Services Cards Section */}
-<section className="py-20 bg-gray-100 relative min-h-screen">
-  <div className="container mx-auto px-4 relative h-[200vh]">
-    <h2 className="text-4xl font-bold text-center mb-16 sticky top-10 z-20">What We Offer</h2>
-
-    <div className="sticky top-32 h-[400px] w-full mx-auto flex items-center justify-center">
-      <div className="relative w-[90%] h-64">
-        {services.map((service, index) => (
-          <div
-            key={service.id}
-            ref={(el) => (serviceRefs.current[index] = el)}
-            className={`absolute top-0 left-0 w-full h-64 transition-all duration-700 ease-out transform
-              ${visibleCardIndex === index ? 'opacity-100 scale-100 z-10' :
-                visibleCardIndex < index ? 'opacity-0 scale-50 z-0' : 'opacity-0 scale-125 z-0'}`}
-            style={{
-              transitionDelay: `${index * 100}ms`,
-            }}
-          >
-            <div className="bg-white rounded-xl shadow-xl p-6 h-full flex items-start gap-4">
-              <div className="text-4xl">{service.icon}</div>
-              <div>
-                <h3 className="text-xl font-bold mb-2">{service.title}</h3>
-                <p className="text-gray-600">{service.description}</p>
-              </div>
+      {/* Services Section with Stacking Cards */}
+      <section ref={sectionRef} className="pt-20 pb-0 bg-zinc-900 h-auto">
+        <div className="container mx-auto px-4">
+          <h2 className="text-4xl font-bold text-center mb-16 text-white">What We Offer</h2>
+            <div ref={cardsRef} className="relative h-[800px] mb-0">
+              {services.map((service, index) => (
+                <div
+                  key={service.id}
+                  ref={el => cardElements.current[index] = el}
+                  className="absolute top-0 left-0 w-full bg-black text-zinc-100
+border border-zinc-700
+ shadow-black/20
+ shadow-xl overflow-hidden flex flex-col md:flex-row"
+                  style={{ 
+                    zIndex: index === 0 ? 10 : 1, // Initial z-index (will be updated by GSAP)
+                    transform: index === 0 ? 'translateY(0)' : 'translateY(100%)',
+                    opacity: index === 0 ? 1 : 0,
+                    height: "400px" // Set explicit height for cards
+                  }}
+                >
+                  {/* Content Side */}
+                  <div className="w-full md:w-1/2 p-8 flex items-start gap-4">
+                    <div className="text-5xl">{service.icon}</div>
+                    <div>
+                      <h3 className="text-2xl font-bold mb-4">{service.title}</h3>
+                      <p className="text-gray-200 text-lg">{service.description}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Image Side */}
+                  <div className="w-full md:w-1/2 relative h-72 md:h-auto">
+                    <Image
+                      src={service.image}
+                      alt={service.title}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
-</section>
-
+         
+        </div>
+      </section>
 
       {/* Call to Action */}
-      <section className="py-16 text-white">
+      <section className="py-16 text-white bg-zinc-900">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-6">Ready to Get Started?</h2>
           <p className="text-xl max-w-2xl mx-auto mb-8">

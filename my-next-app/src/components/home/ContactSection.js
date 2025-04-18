@@ -72,9 +72,9 @@ export default function ContactSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <h2 className="text-3xl md:text-5xl font-bold mb-6">Let's Discuss Your Project</h2>
+              <h2 className="text-3xl md:text-5xl font-bold mb-6">Lets Discuss Your Project</h2>
               <p className="text-zinc-300 text-lg mb-10">
-                We'd love to hear about your architectural vision. Reach out to start a conversation about your next project.
+                Wed love to hear about your architectural vision. Reach out to start a conversation about your next project.
               </p>
               
               <div className="space-y-6 mb-10">
@@ -184,7 +184,7 @@ export default function ContactSection() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <h4 className="text-xl font-bold text-white mb-2">Message Sent!</h4>
-                  <p className="text-zinc-300">Thank you for reaching out. We'll get back to you shortly.</p>
+                  <p className="text-zinc-300">Thank you for reaching out. Well get back to you shortly.</p>
                 </motion.div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5">

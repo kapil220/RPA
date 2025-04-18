@@ -27,27 +27,27 @@ export default function Header() {
   };
   
   return (
-    <header 
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        isScrolled ? 'bg-black/90 backdrop-blur-md py-4' : 'bg-transparent py-6'
-      }`}
-    >
+    <header
+    className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500
+      ${isScrolled ? 'bg-transparent py-8' : 'bg-transparent py-8'} 
+      backdrop-blur-md`}
+  >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex flex-col items-center">
   <div className="flex items-center">
     <Image
-      src={isScrolled ? "/images/logo2.png" : "/images/logo.png"} // Toggle logo
+      src="/images/logo2.png"  // Toggle logo
       alt="Logo"
       height={50}
       width={50}
     />
-    <span className={`font-playfair text-2xl font-bold transition-colors duration-300 ${isScrolled ? 'text-white' : 'text-black'}`}>
+    <span className="font-playfair text-2xl font-bold transition-colors duration-300  text-white ">
       International
     </span>
   </div>
-  <span className={`text-lg transition-colors duration-300 ${isScrolled ? 'text-white' : 'text-black'}`}>
+  <span className="text-lg transition-colors duration-300 text-white">
     Ravi Prakash Architech
   </span>
 </Link>
