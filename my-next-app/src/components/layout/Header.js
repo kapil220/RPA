@@ -10,17 +10,27 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   useEffect(() => {
+    let lastScrollY = window.scrollY;
+  
     const handleScroll = () => {
-      if (window.scrollY > 50) {
+      const currentScrollY = window.scrollY;
+  
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down
         setIsScrolled(true);
       } else {
+        // Scrolling up
         setIsScrolled(false);
       }
+  
+      lastScrollY = currentScrollY;
     };
-    
+  
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+  
+  
   
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -28,10 +38,12 @@ export default function Header() {
   
   return (
     <header
-    className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500
-      ${isScrolled ? 'bg-transparent py-8' : 'bg-transparent py-8'} 
-      backdrop-blur-md`}
-  >
+  className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-500
+    ${isScrolled ? '-translate-y-full' : 'translate-y-0'}
+    bg-transparent py-8 backdrop-blur-md`}
+>
+
+  
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
           {/* Logo */}

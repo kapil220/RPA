@@ -50,7 +50,7 @@ export default function AboutSection() {
   }, []);
 
   return (
-    <section id="about-us" ref={sectionRef} className="relative py-20 md:py-32 overflow-hidden bg-zinc-900">
+    <section id="about-us" ref={sectionRef} className="relative py-20 md:py-32 overflow-hidden bg-stone-900">
       {/* Background video */}
       <div ref={videoRef} className="absolute inset-0 z-0 opacity-20">
         <video

@@ -97,30 +97,35 @@ export default function Services() {
   return (
     <div className="overflow-x-hidden">
       {/* Heading Section First */}
-      <section className="py-32 text-center bg-zinc-900 text-white">
-        <div className="container mx-auto px-4">
-          <h1 className="text-5xl md:text-6xl font-bold mb-8">Our Services</h1>
-          <p className="text-xl max-w-2xl mx-auto">
-            Discover how we can transform your business with our premium services
-          </p>
-        </div>
-      </section>
+      
 
       {/* Full Screen Image Section */}
-      <section className="h-screen w-full relative">
+       <section className="h-screen w-full relative">
         <div className="relative w-full h-full">
+          {/* Background Image */}
           <Image
             src="/images/Hero.jpg" // Replace with your actual image path
-            alt="Services Hero Image"
+            alt="Portfolio Hero Image"
             fill
             priority
-            className="object-cover"
+            className="object-cover z-0"
           />
+      
+          {/* Gradient Overlay for Bottom Fade */}
+          <div className="absolute inset-0 z-5 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
+      
+          {/* Text Content at Bottom-Left */}
+          <div className="absolute bottom-20 left-20 z-10 text-left text-white">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">Crafting Digital Experiences</h2>
+            <p className="text-xl max-w-xl">
+              From concept to completion, we build solutions that inspire and perform
+            </p>
+          </div>
         </div>
       </section>
 
       {/* Services Section with Stacking Cards */}
-      <section ref={sectionRef} className="pt-20 pb-0 bg-zinc-900 h-auto">
+      <section ref={sectionRef} className="pt-20 pb-0 bg-stone-900 h-auto">
         <div className="container mx-auto px-4">
           <h2 className="text-4xl font-bold text-center mb-16 text-white">What We Offer</h2>
             <div ref={cardsRef} className="relative h-[800px] mb-0">
@@ -165,7 +170,7 @@ border border-zinc-700
       </section>
 
       {/* Call to Action */}
-      <section className="py-16 text-white bg-zinc-900">
+      <section className="py-16 text-white bg-stone-900">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-6">Ready to Get Started?</h2>
           <p className="text-xl max-w-2xl mx-auto mb-8">

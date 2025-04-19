@@ -7,6 +7,7 @@ import Link from 'next/link';
 export default function ArchitecturalDesignPage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const contentRef = useRef(null);
+  const sectionRef = useRef(null);
   
   // Page load animation
   useEffect(() => {
@@ -31,21 +32,21 @@ export default function ArchitecturalDesignPage() {
 
   // Scroll animation logic
   const { scrollYProgress } = useScroll({
-    target: contentRef,
+    target: sectionRef,
     offset: ["start start", "end start"]
   });
   
   // Transform scrollYProgress (0-1) to our reveal percentage (0-100)
-  const textRevealPercentage = useTransform(scrollYProgress, [0, 0.3], [0, 100]);
-  const imagePositionLeft = useTransform(scrollYProgress, [0, 0.3], [0, 40]);
-  const imageWidth = useTransform(scrollYProgress, [0, 0.3], [100, 60]);
-  const overlayOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
+  // Complete the animation in the first 15% of the section's scroll
+  const textRevealPercentage = useTransform(scrollYProgress, [0, 0.15], [0, 100]);
+  const imagePositionLeft = useTransform(scrollYProgress, [0, 0.15], [0, 40]);
+  const imageWidth = useTransform(scrollYProgress, [0, 0.15], [100, 60]);
+  const overlayOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
 
   return (
-    <section id="architectural-design" className="min-h-screen bg-zinc-900" ref={contentRef}>
+    <section id="architectural-design" className="min-h-screen bg-stone-900" ref={sectionRef}>
       {/* Navigation */}
    
-      
       {/* Loading indicator */}
       {!isLoaded && (
         <div className="fixed inset-0 flex items-center justify-center z-40 bg-zinc-900">
@@ -57,12 +58,12 @@ export default function ArchitecturalDesignPage() {
       )}
       
       {/* Main content */}
-      <div className="h-screen w-full sticky top-0">
+      <div className="h-screen w-full sticky top-0" ref={contentRef}>
         <div className="absolute inset-0">
           <div className="flex h-full">
             {/* Text panel */}
             <motion.div 
-              className="absolute left-0 top-0 w-full md:w-2/5 h-full bg-zinc-900 z-10"
+              className="absolute left-0 top-0 w-full md:w-2/5 h-full bg-stone-900 z-10"
               style={{ 
                 opacity: textRevealPercentage,
                 x: useTransform(textRevealPercentage, [0, 100], ["-100%", "0%"])
@@ -156,6 +157,7 @@ export default function ArchitecturalDesignPage() {
         </div>
       </div>
       
+  
   
     </section>
   );

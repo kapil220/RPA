@@ -69,10 +69,34 @@ export default function ProjectDetail({ params }) {
   )];
 
   return (
-    <div className="bg-black text-white min-h-screen py-32">
+    <div className="bg-stone-900 text-white min-h-screen">
+      <section className="h-screen w-full relative">
+      <div className="relative w-full h-full">
+        {/* Background Image */}
+        <Image
+          src="/images/Hero.jpg" // Replace with your actual image path
+          alt="Portfolio Hero Image"
+          fill
+          priority
+          className="object-cover z-0"
+        />
+    
+        {/* Gradient Overlay for Bottom Fade */}
+        <div className="absolute inset-0 z-5 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+    
+        {/* Text Content at Bottom-Left */}
+        <div className="absolute bottom-20 left-20 z-10 text-left text-white">
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">Crafting Digital Experiences</h2>
+          <p className="text-xl max-w-xl">
+            From concept to completion, we build solutions that inspire and perform
+          </p>
+        </div>
+      </div>
+    </section>
+    
       <div className="flex flex-col md:flex-row">
         {/* Left sidebar with table of contents */}
-        <aside className="w-full md:w-1/4 p-8 md:sticky md:top-0 md:h-screen overflow-y-auto py-32">
+        <aside className="w-full md:w-1/5 p-8 md:sticky md:top-0 md:h-screen overflow-y-auto py-32 bg-stone-900">
           <h2 className="text-2xl font-semibold mb-4">TABLE OF CONTENTS:</h2>
           <ul className="space-y-2">
             <li>
@@ -110,8 +134,8 @@ export default function ProjectDetail({ params }) {
         </aside>
         
         {/* Main content */}
-        <main ref={contentRef} className="w-full md:w-1/2 p-8">
-          <section id="about" className="mb-16">
+        <main ref={contentRef} className="w-full md:w-3/5 p-8 rounded-2xl bg-stone-800 my-12">
+          <section id="about" className="my-12 ">
             <h1 className="text-3xl md:text-4xl font-bold text-amber-500 mb-8">ABOUT THE PROJECT:</h1>
             
             <div className="grid grid-cols-2 gap-8 mb-8">
@@ -190,7 +214,7 @@ export default function ProjectDetail({ params }) {
         </main>
         
         {/* Right sidebar with related projects */}
-        <aside className="w-full md:w-1/4 p-8 bg-zinc-900">
+        <aside className="w-full md:w-1/5 p-8 md:sticky md:top-0 md:h-screen overflow-y-auto py-32 bg-stone-900">
           <h2 className="text-2xl font-semibold mb-6">READ ALSO:</h2>
           
           <div className="space-y-6">

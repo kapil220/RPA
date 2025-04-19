@@ -142,7 +142,7 @@ export default function PortfolioPreview() {
     <section 
     ref={sectionRef}
     id="portfolio"
-    className="min-h-screen flex flex-col md:flex-row bg-black text-white relative overflow-hidden"
+    className="min-h-screen flex flex-col md:flex-row bg-stone-900 text-white relative overflow-hidden"
   >
     {/* LEFT: Image (60%) */}
     <div className="w-full md:w-3/5 relative  overflow-hidden ">
