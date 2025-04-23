@@ -1,26 +1,239 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Base colors */
+  --background: #F9F7F1;
+  --foreground: #483C32;
+  
+  /* Earthy Modernism Palette */
+  --color-primary: #483C32;    /* Dark Taupe */
+  --color-secondary: #7D8C7C;  /* Sage Green */
+  --color-accent: #C35A38;     /* Terracotta */
+  --color-light: #F9F7F1;      /* Ivory */
+  --color-dark: #2C2420;       /* Deeper Taupe */
+  
+  /* Font variables */
+  --font-sans: var(--font-inter), Arial, Helvetica, sans-serif;
+  --font-display: var(--font-playfair), Georgia, serif;
+  --font-geometric: var(--font-outfit), Arial, sans-serif;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #2C2420;
+    --foreground: #F9F7F1;
+    --color-primary: #F9F7F1;
+    --color-secondary: #A6B5A3;  /* Lighter Sage */
+    --color-accent: #E07A58;     /* Brighter Terracotta */
+    --color-light: #483C32;
+    --color-dark: #F9F7F1;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--color-primary);
+  margin-bottom: 0.75em;
+}
+
+h1 {
+  font-size: 3rem;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 2.5rem;
+  font-weight: 600;
+}
+
+h3 {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+h4 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+p, li, a {
+  font-family: var(--font-sans);
+  color: var(--foreground);
+}
+
+/* Font utility classes */
+.font-inter {
+  font-family: var(--font-sans);
+}
+
+.font-playfair {
+  font-family: var(--font-display);
+}
+
+.font-outfit {
+  font-family: var(--font-geometric);
+}
+
+/* Architectural typography styles */
+.stat-number {
+  font-family: var(--font-geometric);
+  font-weight: 700;
+  color: var(--color-light);
+}
+
+.stat-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color: var(--color-secondary);
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font-geometric);
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  transition: all 0.3s ease;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background-color: var(--color-accent);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: color-mix(in srgb, var(--color-accent) 90%, black);
+}
+
+.btn-outline {
+  border: 1px solid var(--color-secondary);
+  color: var(--color-secondary);
+}
+
+.btn-outline:hover {
+  background-color: var(--color-secondary);
+  color: white;
+}
+
+/* Section styles */
+.section {
+  padding: 5rem 0;
+}
+
+.section-dark {
+  background-color: var(--color-dark);
+  color: var(--color-light);
+}
+
+.section-light {
+  background-color: var(--color-light);
+  color: var(--color-dark);
+}
+
+/* Accent elements */
+.accent-border {
+  border-left: 3px solid var(--color-accent);
+  padding-left: 1rem;
+}
+
+.accent-line {
+  display: inline-block;
+  width: 60px;
+  height: 3px;
+  background-color: var(--color-accent);
+  margin-bottom: 1rem;
+}
+
+/* Card styles */
+.card {
+  background-color: white;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Image overlays */
+.img-overlay {
+  position: relative;
+}
+
+.img-overlay::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.7) 100%);
+}
+
+/* Project grid */
+.project-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.project-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 2rem;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.project-item:hover .project-info {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Navigation */
+.nav-link {
+  font-family: var(--font-geometric);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+  color: var(--color-accent);
+}
+
+/* Footer */
+.footer-heading {
+  font-family: var(--font-geometric);
+  font-weight: 600;
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
 }

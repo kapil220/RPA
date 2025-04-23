@@ -40,7 +40,7 @@ export default function Header() {
     <header
     className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-500
       ${isScrolled ? '-translate-y-full' : 'translate-y-0'}
-      bg-black bg-opacity-80 py-2`}
+      bg-black bg-opacity-80 py-3`}
     
 >
 

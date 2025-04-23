@@ -78,7 +78,7 @@ export default function HeroSection() {
       </div>
 
       {/* Pagination dots */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30 flex gap-2">
+      {/* <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30 flex gap-2">
         {heroImages.map((_, idx) => (
           <button
             key={idx}
@@ -88,7 +88,7 @@ export default function HeroSection() {
             }`}
           />
         ))}
-      </div>
+      </div> */}
 
       {/* Hero content */}
       <div className="relative z-30 flex h-full w-full items-end justify-center text-white px-4 pb-12">
@@ -97,11 +97,11 @@ export default function HeroSection() {
     <p className="hero-text text-xl md:text-2xl mb-8 max-w-2xl mx-auto">
       Where vision meets precision and innovation transforms environments
     </p>
-    <div>
+    {/* <div>
       <button className="hero-text bg-white text-black px-8 py-3 rounded-sm text-lg font-medium hover:bg-opacity-90 transition-all duration-300 transform hover:scale-105">
         Explore Our Work
       </button>
-    </div>
+    </div> */}
   </div>
 </div>
 
