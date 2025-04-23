@@ -1,14 +1,13 @@
 "use client"
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export default function Services() {
   const sectionRef = useRef(null);
-  const cardsRef = useRef(null);
-  const cardElements = useRef([]);
+  const cardRefs = useRef([]);
   
   const services = [
     {
@@ -17,104 +16,103 @@ export default function Services() {
       description: "Custom websites built with cutting-edge technologies that deliver exceptional user experiences tailored to your business needs.",
       icon: "💻",
       image: "/images/portfolio/5.jpg",
-       
     },
     {
       id: 2,
       title: "Mobile App Development",
       description: "Native and cross-platform mobile applications that bring your ideas to life on iOS and Android platforms.",
       icon: "📱",
-      image:  "/images/portfolio/5.jpg",// Add your image path
+      image: "/images/portfolio/5.jpg",
     },
     {
       id: 3,
       title: "UI/UX Design",
       description: "User-centered design solutions that enhance usability and create visually appealing interfaces that engage your audience.",
       icon: "🎨",
-      image:  "/images/portfolio/5.jpg", // Add your image path
+      image: "/images/portfolio/5.jpg",
     },
     {
       id: 4,
       title: "Digital Marketing",
       description: "Strategic marketing campaigns to increase your online presence and reach your target audience effectively.",
       icon: "📈",
-      image:  "/images/portfolio/5.jpg", // Add your image path
+      image: "/images/portfolio/5.jpg",
     }
   ];
 
+  // Set up refs array
   useEffect(() => {
-    // Initialize refs array
-    cardElements.current = cardElements.current.slice(0, services.length);
-    
-    // Register GSAP plugins
-    if (typeof window !== 'undefined') {
-      gsap.registerPlugin(ScrollTrigger);
-      
-      // Make sure all elements are rendered
-      setTimeout(() => {
-        const cards = cardElements.current;
-        if (!cards || !cards.length || !sectionRef.current) return;
-        
-        // Set initial styles for cards
-        gsap.set(cards.slice(1), { y: "100%", opacity: 0 });
-        
-        // Create ScrollTrigger for each card (except first)
-        cards.forEach((card, index) => {
-          if (index === 0) return; // Skip first card
-          
-          ScrollTrigger.create({
-            trigger: sectionRef.current,
-            start: `top+=${index * 200} center`, // Adjust trigger points for each card
-            end: `top+=${(index + 1) * 200} center`,
-            onEnter: () => {
-              // Set z-index higher than previous cards before animating
-              gsap.set(card, { zIndex: index + 10 });
-              gsap.to(card, { 
-                y: `${index * 30}px`, 
-                opacity: 1, 
-                duration: 0.5,
-                ease: "power2.out"
-              });
-            },
-            onLeaveBack: () => {
-              gsap.to(card, { 
-                y: "100%", 
-                opacity: 0, 
-                duration: 0.5,
-                ease: "power2.in"
-              });
-            }
-          });
-        });
-      }, 100);
-      
-      return () => {
-        ScrollTrigger.getAll().forEach(trigger => trigger.kill());
-      };
-    }
+    cardRefs.current = cardRefs.current.slice(0, services.length);
   }, [services.length]);
 
-  return (
-    <div className="overflow-x-hidden">
-      {/* Heading Section First */}
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    gsap.registerPlugin(ScrollTrigger);
+    
+    // Clear any existing ScrollTriggers
+    ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+    
+    // Make sure DOM is fully loaded
+    const initAnimations = () => {
+      // Position all cards initially
+      gsap.set(cardRefs.current[0], { y: 0, opacity: 1 }); // First card visible
       
+      // Hide other cards above (negative y value)
+      cardRefs.current.slice(1).forEach((card) => {
+        gsap.set(card, { y: "-100%", opacity: 0 });
+      });
+      
+      // Create a single scroll-driven animation sequence
+      const timeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top 20%",
+          end: "+=1200", // Adjust this value for scroll distance
+          scrub: 1.2, // Smooth scrubbing with slight delay
+          markers: false, // Set to true for debugging
+          pin: true,
+          anticipatePin: 1,
+        }
+      });
+      
+      // Add each card to the timeline sequentially (from top to bottom)
+      // We reverse the order to have newer cards show above older ones
+      for (let i = services.length - 1; i >= 1; i--) {
+        const card = cardRefs.current[i];
+        const offset = (services.length - i) * 30; // Stack offset
+        
+        timeline.to(card, {
+          y: offset + "px", // Position each new card slightly below the previous one
+          opacity: 1,
+          ease: "power2.out",
+          duration: 1.5, // Timeline duration
+        });
+      }
+    };
+    
+    // Wait a bit to ensure all DOM elements are ready
+    const timer = setTimeout(initAnimations, 200);
+    
+    return () => {
+      clearTimeout(timer);
+      ScrollTrigger.getAll().forEach(t => t.kill());
+    };
+  }, []);
 
-      {/* Full Screen Image Section */}
-       <section className="h-screen w-full relative">
+  return (
+    <div className="overflow-hidden">
+      {/* Hero Section */}
+      <section className="h-screen w-full relative">
         <div className="relative w-full h-full">
-          {/* Background Image */}
           <Image
-            src="/images/Hero.jpg" // Replace with your actual image path
+            src="/images/Hero.jpg"
             alt="Portfolio Hero Image"
             fill
             priority
             className="object-cover z-0"
           />
-      
-          {/* Gradient Overlay for Bottom Fade */}
           <div className="absolute inset-0 z-5 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
-      
-          {/* Text Content at Bottom-Left */}
           <div className="absolute bottom-20 left-20 z-10 text-left text-white">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">Crafting Digital Experiences</h2>
             <p className="text-xl max-w-xl">
@@ -124,48 +122,49 @@ export default function Services() {
         </div>
       </section>
 
-      {/* Services Section with Stacking Cards */}
-      <section ref={sectionRef} className="pt-20 pb-0 bg-stone-900 h-auto">
+      {/* Services Section */}
+      <section ref={sectionRef} className="bg-stone-900 py-20">
         <div className="container mx-auto px-4">
           <h2 className="text-4xl font-bold text-center mb-16 text-white">What We Offer</h2>
-            <div ref={cardsRef} className="relative h-[800px] mb-0">
-              {services.map((service, index) => (
-                <div
-                  key={service.id}
-                  ref={el => cardElements.current[index] = el}
-                  className="absolute top-0 left-0 w-full bg-black text-zinc-100
-border border-zinc-700
- shadow-black/20
- shadow-xl overflow-hidden flex flex-col md:flex-row"
-                  style={{ 
-                    zIndex: index === 0 ? 10 : 1, // Initial z-index (will be updated by GSAP)
-                    transform: index === 0 ? 'translateY(0)' : 'translateY(100%)',
-                    opacity: index === 0 ? 1 : 0,
-                    height: "400px" // Set explicit height for cards
-                  }}
-                >
-                  {/* Content Side */}
-                  <div className="w-full md:w-1/2 p-8 flex items-start gap-4">
-                    <div className="text-5xl">{service.icon}</div>
-                    <div>
-                      <h3 className="text-2xl font-bold mb-4">{service.title}</h3>
-                      <p className="text-gray-200 text-lg">{service.description}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Image Side */}
-                  <div className="w-full md:w-1/2 relative h-72 md:h-auto">
-                    <Image
-                      src={service.image}
-                      alt={service.title}
-                      fill
-                      className="object-cover"
-                    />
+          
+          <div className="relative h-[500px]">
+            {services.map((service, index) => (
+              <div
+                key={service.id}
+                ref={el => (cardRefs.current[index] = el)}
+                className="absolute top-0 left-0 right-0 w-full bg-black text-zinc-100 
+                  border border-zinc-700 shadow-xl overflow-hidden flex flex-col md:flex-row"
+                style={{
+                  height: "400px",
+                  // Critical: Higher index cards need higher z-index to appear on top
+                  zIndex: index, // This makes later cards appear above earlier ones
+                  visibility: "visible",
+                  backfaceVisibility: "hidden",
+                  transform: index === 0 ? "translateY(0)" : "translateY(-100%)", // Start above
+                  opacity: index === 0 ? 1 : 0
+                }}
+              >
+                {/* Content Side */}
+                <div className="w-full md:w-1/2 p-8 flex items-start gap-4">
+                  <div className="text-5xl">{service.icon}</div>
+                  <div>
+                    <h3 className="text-2xl font-bold mb-4">{service.title}</h3>
+                    <p className="text-gray-200 text-lg">{service.description}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-         
+                
+                {/* Image Side */}
+                <div className="w-full md:w-1/2 relative h-72 md:h-auto">
+                  <Image
+                    src={service.image}
+                    alt={service.title}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

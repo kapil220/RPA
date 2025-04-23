@@ -38,13 +38,14 @@ export default function Header() {
   
   return (
     <header
-  className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-500
-    ${isScrolled ? '-translate-y-full' : 'translate-y-0'}
-    bg-transparent py-8 backdrop-blur-md`}
+    className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-500
+      ${isScrolled ? '-translate-y-full' : 'translate-y-0'}
+      bg-black bg-opacity-80 py-2`}
+    
 >
 
   
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-2">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex flex-col items-center">

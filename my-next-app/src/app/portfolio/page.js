@@ -148,7 +148,7 @@ export default function Portfolio() {
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`px-6 py-3 rounded-full font-medium transition duration-300 ${
+                className={`px-6 py-3 font-medium transition duration-300 ${
                   selectedCategory === category.id
                     ? 'bg-white text-blue-600'
                     : 'bg-zinc-800 text-white hover:bg-zinc-700'
@@ -167,7 +167,7 @@ export default function Portfolio() {
               <div key={project.id} className="relative">
                 <Link 
                   href={`/portfolio/${project.slug}`}
-                  className="project-card block bg-black border border-amber-50 rounded-xl overflow-hidden shadow-xl transition duration-300 hover:transform hover:scale-105"
+                  className="project-card block bg-black border border-amber-50 overflow-hidden shadow-xl transition duration-300 hover:transform hover:scale-105"
                 >
                   <div className="relative h-64">
                     <Image
