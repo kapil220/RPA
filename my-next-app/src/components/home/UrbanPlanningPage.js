@@ -1,27 +1,38 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform, useMotionValueEvent } from 'framer-motion';
+import { motion, useScroll, useMotionValue, useSpring, useTransform } from 'framer-motion';
 
 export default function ArchitecturalDesignPage() {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [scrollLocked, setScrollLocked] = useState(false);
-  const [animationProgress, setAnimationProgress] = useState(0);
   const [animationComplete, setAnimationComplete] = useState(false);
+  const [scrollLocked, setScrollLocked] = useState(false);
   
   const contentRef = useRef(null);
   const sectionRef = useRef(null);
   const scrollStartPositionRef = useRef(0);
   const previousScrollYRef = useRef(0);
+  const lastScrollTimeRef = useRef(0);
+  const scrollDirectionRef = useRef(0); // Track scroll direction: 1 for down, -1 for up
   
-  // Page load animation - pre-set isLoaded to true to show image immediately
+  // Use motion value instead of state for smoother animations
+  const animationProgress = useMotionValue(0);
+  
+  // Apply spring physics to smooth out the animation progress
+  const smoothProgress = useSpring(animationProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+  
+  // Page load animation
   useEffect(() => {
-    setIsLoaded(true); // Start with showing the image
+    setIsLoaded(true);
     
     const preloadImage = async () => {
       try {
         const img = new Image();
-        img.src = '/images/services/2.jpg';
+        img.src = '/images/services/1.jpg';
         img.onload = () => setIsLoaded(true);
         img.onerror = () => setIsLoaded(true);
       } catch (error) {
@@ -36,143 +47,255 @@ export default function ArchitecturalDesignPage() {
   // Scroll tracking
   const { scrollY } = useScroll();
   
-  // Custom scroll handler with bidirectional support
+  // Enhanced scroll handler with improved navigation
   const handleScroll = (e) => {
-    if (!scrollLocked && animationComplete && animationProgress >= 1) return;
+    // Get current progress value
+    const currentProgress = animationProgress.get();
+    
+    // Critical fix: Allow normal scrolling when at beginning of animation and scrolling up
+    if (currentProgress <= 0.01 && e.deltaY < 0) {
+      // Allow normal scroll behavior to navigate up the page
+      return;
+    }
+    
+    // Allow normal scrolling when animation is complete and scrolling down
+    if (!scrollLocked && animationComplete && currentProgress >= 0.99 && e.deltaY > 0) {
+      return;
+    }
     
     e.preventDefault();
     e.stopPropagation();
     
-    // Calculate delta from wheel event (negative for up, positive for down)
+    // Get current time to throttle
+    const now = performance.now();
+    if (now - lastScrollTimeRef.current < 16) { // ~60fps
+      return;
+    }
+    lastScrollTimeRef.current = now;
+    
+    // Calculate delta from wheel event
     const delta = e.deltaY;
     
-    // Update animation progress based on wheel delta
-    const newProgress = Math.min(Math.max(animationProgress + (delta * 0.003), 0), 1);
-    setAnimationProgress(newProgress);
+    // Track scroll direction explicitly
+    scrollDirectionRef.current = delta > 0 ? 1 : -1;
     
-    // Mark animation as complete when we reach 1
-    if (newProgress >= 1 && !animationComplete) {
-      setAnimationComplete(true);
-      setScrollLocked(false);
-    }
-    
-    // Handle reverse scrolling - allow animation to go back when scrolling up
-    if (delta < 0 && animationProgress < 1) {
-      // Keep scroll locked during reverse animation
-      if (animationComplete) {
+    // Special case for reverse animation - respond to upward scrolls when not at the top
+    if (delta < 0 && currentProgress > 0) {
+      // If animation was complete but user is scrolling back up
+      if (currentProgress >= 0.98 && animationComplete) {
         setAnimationComplete(false);
         setScrollLocked(true);
       }
     }
+    
+    // Use requestAnimationFrame for smoother visual updates
+    requestAnimationFrame(() => {
+      // Update animation progress based on wheel delta with improved sensitivity
+      const sensitivity = delta < 0 ? 0.003 : 0.002; // Higher sensitivity for reverse
+      const newProgress = Math.min(Math.max(currentProgress + (delta * sensitivity), 0), 1);
+      animationProgress.set(newProgress);
+      
+      // Mark animation as complete when we reach the end
+      if (newProgress >= 0.98 && !animationComplete && scrollDirectionRef.current > 0) {
+        setAnimationComplete(true);
+        setScrollLocked(false);
+      }
+    });
   };
   
-  // Detect when user enters this section
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    // Get section position
-    const sectionTop = sectionRef.current?.getBoundingClientRect().top + window.scrollY || 0;
-    const sectionBottom = sectionTop + (sectionRef.current?.offsetHeight || 0);
-    
-    const isInSection = latest >= sectionTop && latest < sectionBottom;
-    
-    // Start tracking scroll when user enters section
-    if (isInSection && !scrollLocked && animationProgress < 1) {
-      scrollStartPositionRef.current = latest;
-      previousScrollYRef.current = latest;
-      setScrollLocked(true);
-    }
-    
-    // When animation is complete, allow normal scrolling
-    if (animationComplete) return;
-    
-    // If we're locked and user is scrolling, update animation progress
-    if (scrollLocked) {
-      const scrollDelta = latest - previousScrollYRef.current;
-      const maxScrollForAnimation = 150; // Amount of scroll needed to complete animation
-      
-      // Calculate new progress - allows for bidirectional movement
-      const progress = animationProgress + (scrollDelta / maxScrollForAnimation);
-      const clampedProgress = Math.min(Math.max(progress, 0), 1);
-      
-      setAnimationProgress(clampedProgress);
-      previousScrollYRef.current = latest;
-      
-      // Keep the user at the section while animating
-      if (clampedProgress < 1) {
-        window.scrollTo(0, sectionTop);
-      }
-      
-      // Mark animation as complete when we reach 1
-      if (clampedProgress >= 1 && !animationComplete) {
+  // Track when animation completes or reverses
+  useEffect(() => {
+    const unsubscribe = smoothProgress.onChange(value => {
+      if (value >= 0.98 && !animationComplete && scrollDirectionRef.current > 0) {
         setAnimationComplete(true);
         setScrollLocked(false);
       }
       
-      // For reverse scrolling - if we were complete but now we're scrolling back
-      if (scrollDelta < 0 && animationComplete && clampedProgress < 1) {
+      // Handle animation reversal
+      if (value < 0.98 && animationComplete) {
         setAnimationComplete(false);
         setScrollLocked(true);
       }
-    }
-  });
+    });
+    
+    return () => unsubscribe();
+  }, [smoothProgress, animationComplete]);
+  
+  // Detect when user enters this section and manage scroll position
+  useEffect(() => {
+    const handleScrollY = () => {
+      if (!sectionRef.current) return;
+      
+      const sectionTop = sectionRef.current.getBoundingClientRect().top + window.scrollY;
+      const sectionBottom = sectionTop + sectionRef.current.offsetHeight;
+      const currentScrollY = window.scrollY;
+      
+      const isInSection = currentScrollY >= sectionTop - 100 && currentScrollY < sectionBottom;
+      
+      // Start tracking scroll when user enters section
+      if (isInSection && !scrollLocked && animationProgress.get() < 1) {
+        scrollStartPositionRef.current = currentScrollY;
+        previousScrollYRef.current = currentScrollY;
+        setScrollLocked(true);
+      }
+      
+      // When animation is complete, allow normal scrolling
+      if (animationComplete && scrollDirectionRef.current > 0) return;
+      
+      // IMPORTANT: Don't lock scrolling if we're at the beginning and trying to scroll up
+      if (animationProgress.get() <= 0.01 && 
+          previousScrollYRef.current > currentScrollY &&
+          currentScrollY < sectionTop) {
+        setScrollLocked(false);
+        return;
+      }
+      
+      // If we're locked and user is scrolling, update animation progress
+      if ((scrollLocked || animationProgress.get() > 0) && isInSection) {
+        const scrollDelta = currentScrollY - previousScrollYRef.current;
+        const maxScrollForAnimation = 200; // Amount of scroll needed to complete animation
+        
+        // Track scroll direction
+        scrollDirectionRef.current = scrollDelta > 0 ? 1 : -1;
+        
+        // Calculate new progress with bidirectional support
+        const progress = animationProgress.get() + (scrollDelta / maxScrollForAnimation);
+        const clampedProgress = Math.min(Math.max(progress, 0), 1);
+        
+        requestAnimationFrame(() => {
+          animationProgress.set(clampedProgress);
+        });
+        
+        previousScrollYRef.current = currentScrollY;
+        
+        // Keep the user at the section during animation, unless we're at the very start
+        if ((clampedProgress < 0.98 || scrollDirectionRef.current < 0) && clampedProgress > 0.01) {
+          window.scrollTo({ top: sectionTop, behavior: 'auto' });
+        }
+        
+        // Crucial for reverse animation: if we were complete but now we're scrolling back
+        if (scrollDelta < 0 && animationComplete && clampedProgress < 0.98) {
+          setAnimationComplete(false);
+          setScrollLocked(true);
+        }
+      }
+    };
+    
+    const debouncedScrollHandler = () => {
+      const now = performance.now();
+      if (now - lastScrollTimeRef.current < 16) return;
+      lastScrollTimeRef.current = now;
+      
+      requestAnimationFrame(handleScrollY);
+    };
+    
+    window.addEventListener('scroll', debouncedScrollHandler, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', debouncedScrollHandler);
+    };
+  }, [scrollLocked, animationComplete]);
   
   // Add wheel event listener to capture scroll events
   useEffect(() => {
     const sectionElement = sectionRef.current;
     
     if (sectionElement) {
-      const scrollHandler = (e) => {
-        // Only handle scroll if we're in the section or animation is partially complete
-        if (animationProgress > 0 || (!animationComplete && scrollLocked)) {
+      const throttledScrollHandler = (e) => {
+        // Critical fix: Check if we need to handle this scroll event
+        const currentProgress = animationProgress.get();
+        
+        // If at the very beginning and scrolling up, let normal scrolling take over
+        if (currentProgress <= 0.01 && e.deltaY < 0) {
+          return;
+        }
+        
+        // Handle animation-related scrolling
+        if (currentProgress > 0 || e.deltaY > 0 || (!animationComplete && scrollLocked)) {
           handleScroll(e);
         }
       };
       
-      sectionElement.addEventListener('wheel', scrollHandler, { passive: false });
+      sectionElement.addEventListener('wheel', throttledScrollHandler, { passive: false });
       
       return () => {
-        sectionElement.removeEventListener('wheel', scrollHandler);
+        sectionElement.removeEventListener('wheel', throttledScrollHandler);
       };
     }
-  }, [scrollLocked, animationComplete, animationProgress]);
+  }, [scrollLocked, animationComplete]);
   
-  // Touch support for mobile
+  // Enhanced touch support with better reverse handling
   useEffect(() => {
     const sectionElement = sectionRef.current;
     let touchStartY = 0;
+    let lastTouchTime = 0;
+    let lastTouchY = 0;
     
     const handleTouchStart = (e) => {
       touchStartY = e.touches[0].clientY;
+      lastTouchY = touchStartY;
+      lastTouchTime = performance.now();
     };
     
     const handleTouchMove = (e) => {
-      if (!scrollLocked && animationComplete && animationProgress >= 1) return;
-      
+      const currentProgress = animationProgress.get();
       const touchY = e.touches[0].clientY;
-      const deltaY = touchStartY - touchY; // Positive when scrolling down, negative when scrolling up
+      const deltaY = lastTouchY - touchY; // Positive when scrolling down, negative when scrolling up
       
-      // Update animation progress based on touch movement
-      const newProgress = Math.min(Math.max(animationProgress + (deltaY * 0.003), 0), 1);
-      setAnimationProgress(newProgress);
-      
-      // Mark animation as complete when we reach 1
-      if (newProgress >= 1 && !animationComplete) {
-        setAnimationComplete(true);
-        setScrollLocked(false);
+      // Critical fix: Allow normal scrolling up if at the beginning of animation
+      if (currentProgress <= 0.01 && deltaY < 0) {
+        // Let default browser behavior handle the scroll
+        return;
       }
       
-      // Handle reverse scrolling - allow animation to go back when scrolling up
-      if (deltaY < 0 && animationProgress < 1) {
-        // Keep scroll locked during reverse animation
+      // Allow normal scrolling down if animation is complete
+      if (!scrollLocked && animationComplete && currentProgress >= 0.98 && deltaY > 0) {
+        return;
+      }
+      
+      // Always handle upward swipes for reverse animation when in the middle of animation
+      if (currentProgress > 0.01 && currentProgress < 0.98 && deltaY < 0) {
+        // Allow re-entering animation when swiping up
         if (animationComplete) {
           setAnimationComplete(false);
           setScrollLocked(true);
         }
       }
       
-      touchStartY = touchY;
+      // Throttle touch events
+      const now = performance.now();
+      if (now - lastTouchTime < 16) return;
+      lastTouchTime = now;
       
-      // Prevent default only while animation is in progress
-      if (!animationComplete || animationProgress < 1) {
+      // Track direction
+      scrollDirectionRef.current = deltaY > 0 ? 1 : -1;
+      
+      // Update animation progress
+      requestAnimationFrame(() => {
+        const sensitivity = deltaY < 0 ? 0.003 : 0.002; // Higher sensitivity for reverse
+        const newProgress = Math.min(Math.max(currentProgress + (deltaY * sensitivity), 0), 1);
+        animationProgress.set(newProgress);
+        
+        // Mark animation as complete when we reach 1
+        if (newProgress >= 0.98 && !animationComplete && scrollDirectionRef.current > 0) {
+          setAnimationComplete(true);
+          setScrollLocked(false);
+        }
+        
+        // Handle reverse animation - more responsive to upward swipes
+        if (deltaY < 0 && currentProgress < 1 && currentProgress > 0.01) {
+          if (animationComplete && newProgress < 0.98) {
+            setAnimationComplete(false);
+            setScrollLocked(true);
+          }
+        }
+      });
+      
+      lastTouchY = touchY;
+      
+      // Prevent default during animation, except at boundaries
+      if ((currentProgress > 0.01 || deltaY > 0) && 
+          (!animationComplete || currentProgress < 0.98 || deltaY < 0)) {
         e.preventDefault();
       }
     };
@@ -186,19 +309,18 @@ export default function ArchitecturalDesignPage() {
         sectionElement.removeEventListener('touchmove', handleTouchMove);
       };
     }
-  }, [scrollLocked, animationComplete, animationProgress]);
+  }, [scrollLocked, animationComplete]);
   
-  // Calculate transforms based on animation progress
-  // REVERSED: Image now moves left instead of right
-  const imageWidth = useTransform(() => `${100 - (animationProgress * 40)}%`);
-  const imageRight = useTransform(() => `${animationProgress * 40}%`); // Changed from left to right
-  const textX = useTransform(() => `${(1 - animationProgress) * 100}%`); // Reversed direction
-  const textOpacity = useTransform(() => animationProgress);
-  const overlayOpacity = useTransform(() => 1 - animationProgress);
+  // Improved animation transforms with better transitions
+  const imageWidth = useTransform(smoothProgress, value => `${100 - (value * 40)}%`);
+  const imageLeft = useTransform(smoothProgress, value => `${value * 40}%`);
+  const textX = useTransform(smoothProgress, value => `${(value - 1) * 100}%`);
+  const textOpacity = useTransform(smoothProgress, [0, 0.2, 1], [0, 0.8, 1]);
+  const overlayOpacity = useTransform(smoothProgress, [0, 0.7, 1], [1, 0.3, 0]);
 
   return (
     <section id="architectural-design" className="min-h-screen bg-stone-900" ref={sectionRef}>
-      {/* Loading indicator - only shows while image is loading and we're already trying to show it */}
+      {/* Loading indicator */}
       {!isLoaded && (
         <div className="fixed inset-0 flex items-center justify-center z-40 bg-zinc-900">
           <div className="flex flex-col items-center">
@@ -212,9 +334,9 @@ export default function ArchitecturalDesignPage() {
       <div className="h-screen w-full sticky top-0" ref={contentRef}>
         <div className="absolute inset-0">
           <div className="flex h-full">
-            {/* Text panel - now on the right side */}
+            {/* Text panel */}
             <motion.div 
-              className="absolute right-0 top-0 w-full md:w-2/5 h-full bg-stone-900 z-10"
+              className="absolute left-0 top-0 w-full md:w-2/5 h-full bg-stone-900 z-10"
               style={{ 
                 x: textX,
                 opacity: textOpacity
@@ -275,39 +397,38 @@ export default function ArchitecturalDesignPage() {
               </div>
             </motion.div>
             
-            {/* Image - Full screen initially, then shifts left */}
-            <div className="absolute inset-0 h-full overflow-hidden">
+            {/* Image - Full screen initially, then shifts right */}
+            <div className="absolute inset-0 h-full overflow-hidden will-change-transform">
               <motion.div 
-                className="absolute inset-0 h-full"
+                className="absolute inset-0 h-full will-change-transform"
                 style={{ 
                   width: imageWidth,
-                  right: imageRight // Changed from left to right
+                  left: imageLeft
                 }}
               >
                 {/* Show image immediately regardless of loading state */}
                 <img 
-                  src="/images/services/2.jpg" 
+                  src="/images/services/1.jpg" 
                   alt="Architectural Design" 
                   className="w-full h-full object-cover"
                 />
                 
                 {/* Image overlay */}
                 <motion.div 
-                  className="absolute inset-0 flex items-center justify-center  bg-opacity-30"
+                  className="absolute inset-0 flex items-center justify-center bg-opacity-30"
                   style={{ opacity: overlayOpacity }}
                 >
-                  <div className="text-white text-center">
+                  <div className="text-stone-900 text-center">
                     <h1 className="text-6xl font-bold mb-4">
                       Architectural Design
                     </h1>
-                    {!animationComplete && (
-                      <div>
-                        <p className="text-xl mt-4 animate-pulse">Scroll to explore</p>
-                        <p className="text-sm mt-2">
-                          {animationProgress > 0 ? "Scroll up to reverse" : ""}
-                        </p>
-                      </div>
-                    )}
+                    <motion.div
+                      style={{ opacity: useTransform(smoothProgress, p => p < 0.1 ? 1 : 0) }}
+                    >
+                      <p className="text-lg mt-2">
+                        Scroll to explore
+                      </p>
+                    </motion.div>
                   </div>
                 </motion.div>
               </motion.div>
@@ -315,46 +436,59 @@ export default function ArchitecturalDesignPage() {
           </div>
         </div>
         
-        {/* Optional navigation indicators */}
-        <div className="absolute bottom-8 right-8 flex items-center z-20 text-white opacity-30 hover:opacity-100 transition-opacity">
-          {animationProgress > 0 && (
-            <button 
-              onClick={() => {
-                const newProgress = Math.max(animationProgress - 0.25, 0);
-                setAnimationProgress(newProgress);
-                if (newProgress < 1 && animationComplete) {
-                  setAnimationComplete(false);
-                  setScrollLocked(true);
-                }
-              }}
-              className="mr-4 p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
-              aria-label="Reverse animation"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15m0 0l6.75 6.75M4.5 12l6.75-6.75" />
-              </svg>
-            </button>
-          )}
+        {/* Navigation indicators with dynamic visibility */}
+        <motion.div 
+          className="absolute bottom-8 right-8 flex items-center z-20 text-white transition-opacity"
+          style={{ opacity: useTransform(smoothProgress, [0, 0.1, 1], [0, 0.3, 0.3]) }}
+        >
+          <motion.button 
+            onClick={() => {
+              const currentProgress = animationProgress.get();
+              const newProgress = Math.max(currentProgress - 0.25, 0);
+              animationProgress.set(newProgress);
+              
+              // Always reset animation state when manually reversing
+              if (animationComplete) {
+                setAnimationComplete(false);
+                setScrollLocked(true);
+              }
+              
+              // Set scroll direction for consistent behavior
+              scrollDirectionRef.current = -1;
+            }}
+            className="mr-4 p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
+            aria-label="Reverse animation"
+            style={{ opacity: useTransform(smoothProgress, p => p > 0.1 ? 1 : 0) }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15m0 0l6.75 6.75M4.5 12l6.75-6.75" />
+            </svg>
+          </motion.button>
           
-          {animationProgress < 1 && (
-            <button 
-              onClick={() => {
-                const newProgress = Math.min(animationProgress + 0.25, 1);
-                setAnimationProgress(newProgress);
-                if (newProgress >= 1 && !animationComplete) {
-                  setAnimationComplete(true);
-                  setScrollLocked(false);
-                }
-              }}
-              className="p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
-              aria-label="Advance animation"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
-              </svg>
-            </button>
-          )}
-        </div>
+          <motion.button 
+            onClick={() => {
+              const currentProgress = animationProgress.get();
+              const newProgress = Math.min(currentProgress + 0.25, 1);
+              animationProgress.set(newProgress);
+              
+              // Complete animation if reaching the end
+              if (newProgress >= 0.98 && !animationComplete) {
+                setAnimationComplete(true);
+                setScrollLocked(false);
+              }
+              
+              // Set scroll direction for consistent behavior
+              scrollDirectionRef.current = 1;
+            }}
+            className="p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
+            aria-label="Advance animation"
+            style={{ opacity: useTransform(smoothProgress, p => p < 0.98 ? 1 : 0) }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
+            </svg>
+          </motion.button>
+        </motion.div>
       </div>
     </section>
   );
