@@ -2,15 +2,16 @@
 
 :root {
   /* Base colors */
-  --background: #F9F7F1;
-  --foreground: #483C32;
+  --background: #1F1A17;
+  --foreground: #E8E2D8;
   
-  /* Earthy Modernism Palette */
-  --color-primary: #483C32;    /* Dark Taupe */
-  --color-secondary: #7D8C7C;  /* Sage Green */
-  --color-accent: #C35A38;     /* Terracotta */
-  --color-light: #F9F7F1;      /* Ivory */
-  --color-dark: #2C2420;       /* Deeper Taupe */
+  /* Dark Earthy Modernism Palette */
+  --color-primary: #E8E2D8;     /* Light Cream */
+  --color-secondary: #A6B5A3;   /* Muted Sage */
+  --color-accent: #E07A58;      /* Terracotta */
+  --color-dark: #1F1A17;        /* Deep Brown/Black */
+  --color-darker: #121010;      /* Near Black */
+  --color-medium: #483C32;      /* Dark Taupe */
   
   /* Font variables */
   --font-sans: var(--font-inter), Arial, Helvetica, sans-serif;
@@ -23,18 +24,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #2C2420;
-    --foreground: #F9F7F1;
-    --color-primary: #F9F7F1;
-    --color-secondary: #A6B5A3;  /* Lighter Sage */
-    --color-accent: #E07A58;     /* Brighter Terracotta */
-    --color-light: #483C32;
-    --color-dark: #F9F7F1;
-  }
 }
 
 body {
@@ -95,7 +84,7 @@ p, li, a {
 .stat-number {
   font-family: var(--font-geometric);
   font-weight: 700;
-  color: var(--color-light);
+  color: var(--color-primary);
 }
 
 .stat-label {
@@ -133,7 +122,7 @@ p, li, a {
 
 .btn-outline:hover {
   background-color: var(--color-secondary);
-  color: white;
+  color: var(--background);
 }
 
 /* Section styles */
@@ -141,14 +130,14 @@ p, li, a {
   padding: 5rem 0;
 }
 
-.section-dark {
-  background-color: var(--color-dark);
-  color: var(--color-light);
+.section-darker {
+  background-color: var(--color-darker);
+  color: var(--color-primary);
 }
 
-.section-light {
-  background-color: var(--color-light);
-  color: var(--color-dark);
+.section-medium {
+  background-color: var(--color-medium);
+  color: var(--color-primary);
 }
 
 /* Accent elements */
@@ -167,16 +156,16 @@ p, li, a {
 
 /* Card styles */
 .card {
-  background-color: white;
+  background-color: var(--color-medium);
   border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
 /* Image overlays */
@@ -191,7 +180,7 @@ p, li, a {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.7) 100%);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.8) 100%);
 }
 
 /* Project grid */
@@ -236,4 +225,5 @@ p, li, a {
   font-weight: 600;
   font-size: 1.2rem;
   margin-bottom: 1.5rem;
+  color: var(--color-primary);
 }

@@ -50,7 +50,7 @@ export default function AboutSection() {
   }, []);
 
   return (
-    <section id="about-us" ref={sectionRef} className="relative py-20 md:py-32 overflow-hidden bg-stone-900">
+    <section id="about-us" ref={sectionRef} className="relative py-20 md:py-32 overflow-hidden ">
       {/* Background video */}
       <div ref={videoRef} className="absolute inset-0 z-0 opacity-20">
         <video
@@ -67,14 +67,14 @@ export default function AboutSection() {
       <div className="container mx-auto px-4 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           {/* Left column - Text content */}
-          <div ref={textRef} className="text-white">
+          <div ref={textRef} className="">
             <h2 className="fade-in text-3xl md:text-4xl font-bold mb-8 tracking-tight font-playfair">
               Our Vision & Approach
             </h2>
-            <p className="fade-in text-lg mb-6 text-zinc-300 leading-relaxed font-inter">
+            <p className="fade-in text-lg mb-6  leading-relaxed font-inter">
               Founded on principles of sustainable innovation and contextual design, our firm creates spaces that respond to both human needs and environmental concerns.
             </p>
-            <p className="fade-in text-lg mb-8 text-zinc-300 leading-relaxed font-inter">
+            <p className="fade-in text-lg mb-8  leading-relaxed font-inter">
               We believe architecture should be a harmonious dialogue between form, function, and the surrounding environment, resulting in spaces that inspire and endure.
             </p>
             
@@ -85,20 +85,20 @@ export default function AboutSection() {
               transition={{ duration: 0.6, delay: 0.4 }}
             >
               <div>
-                <h3 className="text-4xl font-bold text-white mb-2 font-inter stat-number">15+</h3>
-                <p className="text-zinc-400 font-playfair stat-label">Years Experience</p>
+                <h3 className="text-4xl font-bold  mb-2 font-inter stat-number">15+</h3>
+                <p className=" font-playfair stat-label">Years Experience</p>
               </div>
               <div>
-                <h3 className="text-4xl font-bold text-white mb-2 font-inter stat-number">120+</h3>
-                <p className="text-zinc-400 font-playfair stat-label">Projects Completed</p>
+                <h3 className="text-4xl font-bold  mb-2 font-inter stat-number">120+</h3>
+                <p className=" font-playfair stat-label">Projects Completed</p>
               </div>
               <div>
-                <h3 className="text-4xl font-bold text-white mb-2 font-inter stat-number">38</h3>
-                <p className="text-zinc-400 font-playfair stat-label">Design Awards</p>
+                <h3 className="text-4xl font-bold  mb-2 font-inter stat-number">38</h3>
+                <p className=" font-playfair stat-label">Design Awards</p>
               </div>
               <div>
-                <h3 className="text-4xl font-bold text-white mb-2 font-inter stat-number">24</h3>
-                <p className="text-zinc-400 font-playfair stat-label">Team Members</p>
+                <h3 className="text-4xl font-bold  mb-2 font-inter stat-number">24</h3>
+                <p className=" font-playfair stat-label">Team Members</p>
               </div>
             </motion.div>
           </div>

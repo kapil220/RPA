@@ -312,11 +312,14 @@ export default function ArchitecturalDesignPage() {
   }, [scrollLocked, animationComplete]);
   
   // Improved animation transforms with better transitions
-  const imageWidth = useTransform(smoothProgress, value => `${100 - (value * 40)}%`);
-  const imageLeft = useTransform(smoothProgress, value => `${value * 40}%`);
-  const textX = useTransform(smoothProgress, value => `${(value - 1) * 100}%`);
-  const textOpacity = useTransform(smoothProgress, [0, 0.2, 1], [0, 0.8, 1]);
-  const overlayOpacity = useTransform(smoothProgress, [0, 0.7, 1], [1, 0.3, 0]);
+  // Replace your existing transform definitions with these:
+const imageWidth = useTransform(smoothProgress, value => `${100 - (value * 40)}%`);
+const imageLeft = useTransform(smoothProgress, value => `${value * 40}%`);
+const imageHeight = useTransform(smoothProgress, value => `${100 - (value * 30)}%`); // Reduces to 70% height
+const imageTop = useTransform(smoothProgress, value => `${value * 15}%`); // Centers vertically
+const textX = useTransform(smoothProgress, value => `${(value - 1) * 100}%`);
+const textOpacity = useTransform(smoothProgress, [0, 0.2, 1], [0, 0.8, 1]);
+const overlayOpacity = useTransform(smoothProgress, [0, 0.7, 1], [1, 0.3, 0]);
 
   return (
     <section id="architectural-design" className="min-h-screen bg-stone-900" ref={sectionRef}>
@@ -399,13 +402,15 @@ export default function ArchitecturalDesignPage() {
             
             {/* Image - Full screen initially, then shifts right */}
             <div className="absolute inset-0 h-full overflow-hidden will-change-transform">
-              <motion.div 
-                className="absolute inset-0 h-full will-change-transform"
-                style={{ 
-                  width: imageWidth,
-                  left: imageLeft
-                }}
-              >
+            <motion.div 
+  className="absolute inset-0 h-full will-change-transform"
+  style={{ 
+    width: imageWidth,
+    left: imageLeft,
+    height: imageHeight,
+    top: imageTop
+  }}
+>
                 {/* Show image immediately regardless of loading state */}
                 <img 
                   src="/images/services/1.jpg" 

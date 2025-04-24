@@ -145,43 +145,10 @@ export default function PortfolioPreview() {
       id="portfolio"
       className="min-h-screen flex flex-col md:flex-row bg-stone-900 text-white relative overflow-hidden"
     >
-      {/* LEFT: Image (60%) */}
-      <div className="w-full md:w-3/5 relative overflow-hidden">
-        <AnimatePresence mode="popLayout">
-          <motion.div 
-            key={activeIndex}
-            className="w-full h-full"
-            initial={{ 
-              y: direction > 0 ? '100%' : '-100%',
-              opacity: 0 
-            }}
-            animate={{ 
-              y: 0,
-              opacity: 1 
-            }}
-            exit={{ 
-              y: direction > 0 ? '-100%' : '100%',
-              opacity: 0 
-            }}
-            transition={{ 
-              duration: 1.2, // Longer duration for smoother transition
-              ease: [0.16, 1, 0.3, 1] // Custom easing for smoother feel
-            }}
-          >
-            <Image
-              src={projects[activeIndex].image}
-              alt={projects[activeIndex].title}
-              fill
-              className="object-cover py-64 px-16"
-              priority={activeIndex === 0}
-              quality={90}
-            />
-          </motion.div>
-        </AnimatePresence>
-      </div>
-    
-      {/* RIGHT: Text (40%) */}
-      <div className="w-full md:w-2/5 px-8 py-16 flex flex-col justify-between order-2 md:order-2">
+      {/* MOBILE: Text at top, Image at bottom / DESKTOP: Image left (60%), Text right (40%) */}
+      
+      {/* Text Section - First on mobile, Second on desktop */}
+      <div className="w-full md:w-2/5 px-8 py-12 flex flex-col justify-between order-first md:order-last">
         <div>
           <motion.h2 
             className="text-4xl font-bold mb-6"
@@ -192,7 +159,7 @@ export default function PortfolioPreview() {
             Our Portfolio
           </motion.h2>
           <motion.p 
-            className="text-lg text-zinc-400 max-w-md mb-16"
+            className="text-lg text-zinc-400 max-w-md mb-12"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: sectionActive ? 1 : 0, y: sectionActive ? 0 : 20 }}
             transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
@@ -203,7 +170,7 @@ export default function PortfolioPreview() {
         </div>
     
         {/* Project Details */}
-        <div className="relative h-32 overflow-hidden">
+        <div className="relative h-32 overflow-hidden mb-8">
           <AnimatePresence mode="popLayout">
             <motion.div
               key={activeIndex}
@@ -239,7 +206,7 @@ export default function PortfolioPreview() {
         </div>
     
         {/* Progress Dots */}
-        <div className="flex space-x-2 mt-12">
+        <div className="flex space-x-2 mb-8">
           {projects.map((_, index) => (
             <motion.div
               key={index}
@@ -258,16 +225,51 @@ export default function PortfolioPreview() {
           ))}
         </div>
       </div>
+      
+      {/* Image Section - Second on mobile, First on desktop */}
+      <div className="w-full md:w-3/5 flex justify-center items-center order-last md:order-first">
+        <AnimatePresence mode="popLayout">
+          <motion.div 
+            key={activeIndex}
+            className="relative h-96 w-96 md:h-128 md:w-[800px]"
+            initial={{ 
+              y: direction > 0 ? '100%' : '-100%',
+              opacity: 0 
+            }}
+            animate={{ 
+              y: 0,
+              opacity: 1 
+            }}
+            exit={{ 
+              y: direction > 0 ? '-100%' : '100%',
+              opacity: 0 
+            }}
+            transition={{ 
+              duration: 1.2, // Longer duration for smoother transition
+              ease: [0.16, 1, 0.3, 1] // Custom easing for smoother feel
+            }}
+          >
+            <Image
+              src={projects[activeIndex].image}
+              alt={projects[activeIndex].title}
+              fill
+              className="object-cover p-4"
+              priority={activeIndex === 0}
+              quality={90}
+            />
+          </motion.div>
+        </AnimatePresence>
+      </div>
     
       {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
         {isFullyVisible && !hasCompletedViewing && (
           <div className="flex flex-col items-center">
-            <p className="text-zinc-400 text-sm mb-2">
+            <p className="text-zinc-400 text-sm mb-2 text-center px-4">
               {activeIndex === 0 && projects.length > 1
-                ? "Scroll down to explore projects or up to previous section"
+                ? "Scroll down to explore projects"
                 : activeIndex === projects.length - 1
-                  ? "Scroll down to continue to next section" 
+                  ? "Scroll down to continue" 
                   : "Scroll to navigate projects"}
             </p>
             <motion.div 
