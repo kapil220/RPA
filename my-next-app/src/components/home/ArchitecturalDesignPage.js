@@ -7,6 +7,7 @@ export default function ArchitecturalDesignPage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [animationComplete, setAnimationComplete] = useState(false);
   const [scrollLocked, setScrollLocked] = useState(false);
+  const [sectionInView, setSectionInView] = useState(false);
   
   const contentRef = useRef(null);
   const sectionRef = useRef(null);
@@ -15,20 +16,19 @@ export default function ArchitecturalDesignPage() {
   const lastScrollTimeRef = useRef(0);
   const scrollDirectionRef = useRef(0); // Track scroll direction: 1 for down, -1 for up
   
-  // Use motion value instead of state for smoother animations
+  // Use motion value for smoother animations
   const animationProgress = useMotionValue(0);
   
-  // Apply spring physics to smooth out the animation progress
+  // Apply spring physics with optimized values for smoother animation
   const smoothProgress = useSpring(animationProgress, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001
+    stiffness: 60,  // Reduced from 100 for smoother animation
+    damping: 20,    // Reduced from 30 for smoother animation
+    restDelta: 0.0005  // More precise stop point
   });
   
   // Page load animation
   useEffect(() => {
-    setIsLoaded(true);
-    
+    // Preload the main image
     const preloadImage = async () => {
       try {
         const img = new Image();
@@ -44,11 +44,52 @@ export default function ArchitecturalDesignPage() {
     preloadImage();
   }, []);
 
-  // Scroll tracking
-  const { scrollY } = useScroll();
+  // Enhanced Intersection Observer to properly detect when section is fully in view
+  useEffect(() => {
+    if (!sectionRef.current) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        
+        // Only set section in view when it's fully visible or nearly fully visible (80%+)
+        if (entry.isIntersecting && entry.intersectionRatio > 0.8) {
+          setSectionInView(true);
+        } else {
+          setSectionInView(false);
+          
+          // Reset animation when scrolling away from the section
+          if (!entry.isIntersecting && animationProgress.get() > 0 && animationProgress.get() < 0.1) {
+            animationProgress.set(0);
+          }
+        }
+      },
+      {
+        root: null, // viewport
+        rootMargin: '0px',
+        threshold: [0, 0.1, 0.5, 0.8, 1.0] // Multiple thresholds for more precise tracking
+      }
+    );
+    
+    observer.observe(sectionRef.current);
+    
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, []);
+
+  // Scroll tracking with improved performance
+  const { scrollY } = useScroll({
+    smooth: 16, // Smooth the scroll input for better performance
+  });
   
-  // Enhanced scroll handler with improved navigation
+  // Enhanced scroll handler with improved navigation and touch response
   const handleScroll = (e) => {
+    // Don't handle scroll if section isn't properly in view
+    if (!sectionInView) return;
+    
     // Get current progress value
     const currentProgress = animationProgress.get();
     
@@ -91,7 +132,12 @@ export default function ArchitecturalDesignPage() {
     // Use requestAnimationFrame for smoother visual updates
     requestAnimationFrame(() => {
       // Update animation progress based on wheel delta with improved sensitivity
-      const sensitivity = delta < 0 ? 0.003 : 0.002; // Higher sensitivity for reverse
+      // Adjust sensitivity based on device performance detection
+      const isMobile = window.innerWidth <= 768;
+      const sensitivity = isMobile ? 
+        (delta < 0 ? 0.004 : 0.003) : // Higher sensitivity for mobile
+        (delta < 0 ? 0.003 : 0.002);  // Standard sensitivity for desktop
+        
       const newProgress = Math.min(Math.max(currentProgress + (delta * sensitivity), 0), 1);
       animationProgress.set(newProgress);
       
@@ -121,19 +167,23 @@ export default function ArchitecturalDesignPage() {
     return () => unsubscribe();
   }, [smoothProgress, animationComplete]);
   
-  // Detect when user enters this section and manage scroll position
+  // Enhanced section detection and scroll position management
   useEffect(() => {
     const handleScrollY = () => {
-      if (!sectionRef.current) return;
+      if (!sectionRef.current || !sectionInView) return;
       
       const sectionTop = sectionRef.current.getBoundingClientRect().top + window.scrollY;
       const sectionBottom = sectionTop + sectionRef.current.offsetHeight;
       const currentScrollY = window.scrollY;
+      const viewportHeight = window.innerHeight;
       
-      const isInSection = currentScrollY >= sectionTop - 100 && currentScrollY < sectionBottom;
-      
+      // Check if section is fully in viewport
+      const isFullyInView = 
+        sectionTop <= currentScrollY + viewportHeight * 0.1 && // Section top is above 10% of viewport
+        sectionBottom >= currentScrollY + viewportHeight * 0.9; // Section bottom is below 90% of viewport
+        
       // Start tracking scroll when user enters section
-      if (isInSection && !scrollLocked && animationProgress.get() < 1) {
+      if (isFullyInView && !scrollLocked && animationProgress.get() < 1) {
         scrollStartPositionRef.current = currentScrollY;
         previousScrollYRef.current = currentScrollY;
         setScrollLocked(true);
@@ -150,15 +200,17 @@ export default function ArchitecturalDesignPage() {
         return;
       }
       
-      // If we're locked and user is scrolling, update animation progress
-      if ((scrollLocked || animationProgress.get() > 0) && isInSection) {
+      // If we're locked and user is scrolling within the section, update animation progress
+      if ((scrollLocked || animationProgress.get() > 0) && isFullyInView) {
         const scrollDelta = currentScrollY - previousScrollYRef.current;
-        const maxScrollForAnimation = 200; // Amount of scroll needed to complete animation
+        
+        // Use a more adaptive scroll range based on viewport size
+        const maxScrollForAnimation = Math.min(viewportHeight * 0.5, 300); // Either 50% of viewport or 300px, whichever is smaller
         
         // Track scroll direction
         scrollDirectionRef.current = scrollDelta > 0 ? 1 : -1;
         
-        // Calculate new progress with bidirectional support
+        // Calculate new progress with bidirectional support and adaptive sensitivity
         const progress = animationProgress.get() + (scrollDelta / maxScrollForAnimation);
         const clampedProgress = Math.min(Math.max(progress, 0), 1);
         
@@ -181,28 +233,28 @@ export default function ArchitecturalDesignPage() {
       }
     };
     
-    const debouncedScrollHandler = () => {
-      const now = performance.now();
-      if (now - lastScrollTimeRef.current < 16) return;
-      lastScrollTimeRef.current = now;
-      
+    // Optimized scroll handler with RAF for smoother performance
+    const optimizedScrollHandler = () => {
       requestAnimationFrame(handleScrollY);
     };
     
-    window.addEventListener('scroll', debouncedScrollHandler, { passive: true });
+    window.addEventListener('scroll', optimizedScrollHandler, { passive: true });
     
     return () => {
-      window.removeEventListener('scroll', debouncedScrollHandler);
+      window.removeEventListener('scroll', optimizedScrollHandler);
     };
-  }, [scrollLocked, animationComplete]);
+  }, [scrollLocked, animationComplete, sectionInView]);
   
-  // Add wheel event listener to capture scroll events
+  // Optimized wheel event listener with better performance
   useEffect(() => {
     const sectionElement = sectionRef.current;
     
     if (sectionElement) {
-      const throttledScrollHandler = (e) => {
-        // Critical fix: Check if we need to handle this scroll event
+      const wheelHandler = (e) => {
+        // Only handle wheel events when section is fully in view
+        if (!sectionInView) return;
+        
+        // Get current progress value
         const currentProgress = animationProgress.get();
         
         // If at the very beginning and scrolling up, let normal scrolling take over
@@ -216,31 +268,49 @@ export default function ArchitecturalDesignPage() {
         }
       };
       
-      sectionElement.addEventListener('wheel', throttledScrollHandler, { passive: false });
+      // Use passive: false to enable preventDefault in the handler
+      sectionElement.addEventListener('wheel', wheelHandler, { passive: false });
       
       return () => {
-        sectionElement.removeEventListener('wheel', throttledScrollHandler);
+        sectionElement.removeEventListener('wheel', wheelHandler);
       };
     }
-  }, [scrollLocked, animationComplete]);
+  }, [scrollLocked, animationComplete, sectionInView]);
   
-  // Enhanced touch support with better reverse handling
+  // Enhanced touch support with better performance and sensitivity for mobile
   useEffect(() => {
     const sectionElement = sectionRef.current;
     let touchStartY = 0;
     let lastTouchTime = 0;
     let lastTouchY = 0;
+    let touchVelocity = 0;
+    let lastTouchTimeStamp = 0;
     
     const handleTouchStart = (e) => {
       touchStartY = e.touches[0].clientY;
       lastTouchY = touchStartY;
       lastTouchTime = performance.now();
+      lastTouchTimeStamp = e.timeStamp;
+      touchVelocity = 0;
     };
     
     const handleTouchMove = (e) => {
+      // Don't handle touch events if section isn't properly in view
+      if (!sectionInView) return;
+      
       const currentProgress = animationProgress.get();
       const touchY = e.touches[0].clientY;
       const deltaY = lastTouchY - touchY; // Positive when scrolling down, negative when scrolling up
+      
+      // Calculate velocity for more responsive touch handling
+      const now = e.timeStamp;
+      const timeDelta = now - lastTouchTimeStamp;
+      if (timeDelta > 0) {
+        // Smooth out velocity calculation
+        const instantVelocity = deltaY / timeDelta;
+        touchVelocity = touchVelocity * 0.7 + instantVelocity * 0.3; // Weighted average
+      }
+      lastTouchTimeStamp = now;
       
       // Critical fix: Allow normal scrolling up if at the beginning of animation
       if (currentProgress <= 0.01 && deltaY < 0) {
@@ -254,29 +324,35 @@ export default function ArchitecturalDesignPage() {
       }
       
       // Always handle upward swipes for reverse animation when in the middle of animation
-      if (currentProgress > 0.01 && currentProgress < 0.98 && deltaY < 0) {
+      if (currentProgress > 0.01 && currentProgress < 0.98) {
         // Allow re-entering animation when swiping up
-        if (animationComplete) {
+        if (animationComplete && deltaY < 0) {
           setAnimationComplete(false);
           setScrollLocked(true);
         }
       }
       
-      // Throttle touch events
-      const now = performance.now();
-      if (now - lastTouchTime < 16) return;
-      lastTouchTime = now;
+      // Throttle touch events for better performance
+      const now2 = performance.now();
+      if (now2 - lastTouchTime < 16) return;
+      lastTouchTime = now2;
       
       // Track direction
       scrollDirectionRef.current = deltaY > 0 ? 1 : -1;
       
-      // Update animation progress
+      // Update animation progress with enhanced sensitivity for mobile
       requestAnimationFrame(() => {
-        const sensitivity = deltaY < 0 ? 0.003 : 0.002; // Higher sensitivity for reverse
+        // Base sensitivity is higher on mobile for better responsiveness
+        const baseSensitivity = deltaY < 0 ? 0.006 : 0.004;
+        
+        // Apply velocity factor for more responsive feel (but cap it to avoid jumps)
+        const velocityFactor = Math.min(Math.abs(touchVelocity) * 10, 2);
+        const sensitivity = baseSensitivity * (1 + velocityFactor);
+        
         const newProgress = Math.min(Math.max(currentProgress + (deltaY * sensitivity), 0), 1);
         animationProgress.set(newProgress);
         
-        // Mark animation as complete when we reach 1
+        // Mark animation as complete when we reach the end
         if (newProgress >= 0.98 && !animationComplete && scrollDirectionRef.current > 0) {
           setAnimationComplete(true);
           setScrollLocked(false);
@@ -309,17 +385,16 @@ export default function ArchitecturalDesignPage() {
         sectionElement.removeEventListener('touchmove', handleTouchMove);
       };
     }
-  }, [scrollLocked, animationComplete]);
+  }, [scrollLocked, animationComplete, sectionInView]);
   
-  // Improved animation transforms with better transitions
-  // Replace your existing transform definitions with these:
+// Replace the transform definitions with these:
 const imageWidth = useTransform(smoothProgress, value => `${100 - (value * 40)}%`);
 const imageLeft = useTransform(smoothProgress, value => `${value * 40}%`);
-const imageHeight = useTransform(smoothProgress, value => `${100 - (value * 30)}%`); // Reduces to 70% height
-const imageTop = useTransform(smoothProgress, value => `${value * 15}%`); // Centers vertically
+const imageHeight = useTransform(smoothProgress, value => `${100 - (value * 30)}%`);
+const imageTop = useTransform(smoothProgress, value => `${value * 15}%`);
 const textX = useTransform(smoothProgress, value => `${(value - 1) * 100}%`);
-const textOpacity = useTransform(smoothProgress, [0, 0.2, 1], [0, 0.8, 1]);
-const overlayOpacity = useTransform(smoothProgress, [0, 0.7, 1], [1, 0.3, 0]);
+const textOpacity = useTransform(smoothProgress, [0, 0.3, 1], [0, 0.8, 1]);
+const overlayOpacity = useTransform(smoothProgress, [0, 0.5, 1], [1, 0.3, 0]);
 
   return (
     <section id="architectural-design" className="min-h-screen bg-stone-900" ref={sectionRef}>
@@ -402,15 +477,15 @@ const overlayOpacity = useTransform(smoothProgress, [0, 0.7, 1], [1, 0.3, 0]);
             
             {/* Image - Full screen initially, then shifts right */}
             <div className="absolute inset-0 h-full overflow-hidden will-change-transform">
-            <motion.div 
-  className="absolute inset-0 h-full will-change-transform"
-  style={{ 
-    width: imageWidth,
-    left: imageLeft,
-    height: imageHeight,
-    top: imageTop
-  }}
->
+              <motion.div 
+                className="absolute inset-0 h-full will-change-transform"
+                style={{ 
+                  width: imageWidth,
+                  left: imageLeft,
+                  height: imageHeight,
+                  top: imageTop
+                }}
+              >
                 {/* Show image immediately regardless of loading state */}
                 <img 
                   src="/images/services/1.jpg" 
@@ -444,7 +519,7 @@ const overlayOpacity = useTransform(smoothProgress, [0, 0.7, 1], [1, 0.3, 0]);
         {/* Navigation indicators with dynamic visibility */}
         <motion.div 
           className="absolute bottom-8 right-8 flex items-center z-20 text-white transition-opacity"
-          style={{ opacity: useTransform(smoothProgress, [0, 0.1, 1], [0, 0.3, 0.3]) }}
+          style={{ opacity: useTransform(smoothProgress, [0, 0.1, 1], [0, 0.7, 0.7]) }}
         >
           <motion.button 
             onClick={() => {
@@ -494,6 +569,11 @@ const overlayOpacity = useTransform(smoothProgress, [0, 0.7, 1], [1, 0.3, 0]);
             </svg>
           </motion.button>
         </motion.div>
+        
+        {/* Visual indicator when section is in view */}
+        {sectionInView && (
+          <div className="fixed bottom-4 left-4 w-3 h-3 rounded-full bg-white opacity-50 z-30 animate-pulse" />
+        )}
       </div>
     </section>
   );
