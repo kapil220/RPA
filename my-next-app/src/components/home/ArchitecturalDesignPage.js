@@ -8,6 +8,7 @@ export default function ArchitecturalDesignPage() {
   const [animationComplete, setAnimationComplete] = useState(false);
   const [scrollLocked, setScrollLocked] = useState(false);
   const [sectionInView, setSectionInView] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
   const contentRef = useRef(null);
   const sectionRef = useRef(null);
@@ -26,6 +27,26 @@ export default function ArchitecturalDesignPage() {
     restDelta: 0.0005  // More precise stop point
   });
   
+  // Scroll tracking with improved performance
+  const { scrollY } = useScroll({
+    smooth: 16, // Smooth the scroll input for better performance
+  });
+  
+  // Transform definitions for desktop animation - ALWAYS create these hooks regardless of isMobile
+  const imageWidth = useTransform(smoothProgress, value => `${100 - (value * 40)}%`);
+  const imageLeft = useTransform(smoothProgress, value => `${value * 40}%`);
+  const imageHeight = useTransform(smoothProgress, value => `${100 - (value * 30)}%`);
+  const imageTop = useTransform(smoothProgress, value => `${value * 15}%`);
+  const textX = useTransform(smoothProgress, value => `${(value - 1) * 100}%`);
+  const textOpacity = useTransform(smoothProgress, [0, 0.3, 1], [0, 0.8, 1]);
+  const overlayOpacity = useTransform(smoothProgress, [0, 0.5, 1], [1, 0.3, 0]);
+  
+  // Need to move these hooks outside of JSX as well
+  const scrollPromptOpacity = useTransform(smoothProgress, p => p < 0.1 ? 1 : 0);
+  const navControlsOpacity = useTransform(smoothProgress, [0, 0.1, 1], [0, 0.7, 0.7]);
+  const backButtonOpacity = useTransform(smoothProgress, p => p > 0.1 ? 1 : 0);
+  const forwardButtonOpacity = useTransform(smoothProgress, p => p < 0.98 ? 1 : 0);
+  
   // Page load animation
   useEffect(() => {
     // Preload the main image
@@ -42,7 +63,22 @@ export default function ArchitecturalDesignPage() {
     };
     
     preloadImage();
+    
+    // Check if mobile on initial load
+    checkIfMobile();
+    
+    // Set up resize listener to detect mobile/desktop
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
   }, []);
+  
+  // Function to check if current viewport is mobile
+  const checkIfMobile = () => {
+    setIsMobile(window.innerWidth <= 768);
+  };
 
   // Enhanced Intersection Observer to properly detect when section is fully in view
   useEffect(() => {
@@ -79,14 +115,12 @@ export default function ArchitecturalDesignPage() {
       }
     };
   }, []);
-
-  // Scroll tracking with improved performance
-  const { scrollY } = useScroll({
-    smooth: 16, // Smooth the scroll input for better performance
-  });
   
-  // Enhanced scroll handler with improved navigation and touch response
+  // Enhanced scroll handler with improved navigation and touch response - Only for desktop
   const handleScroll = (e) => {
+    // Skip animation handling entirely if on mobile
+    if (isMobile) return;
+    
     // Don't handle scroll if section isn't properly in view
     if (!sectionInView) return;
     
@@ -132,11 +166,7 @@ export default function ArchitecturalDesignPage() {
     // Use requestAnimationFrame for smoother visual updates
     requestAnimationFrame(() => {
       // Update animation progress based on wheel delta with improved sensitivity
-      // Adjust sensitivity based on device performance detection
-      const isMobile = window.innerWidth <= 768;
-      const sensitivity = isMobile ? 
-        (delta < 0 ? 0.004 : 0.003) : // Higher sensitivity for mobile
-        (delta < 0 ? 0.003 : 0.002);  // Standard sensitivity for desktop
+      const sensitivity = delta < 0 ? 0.003 : 0.002;  // Standard sensitivity for desktop
         
       const newProgress = Math.min(Math.max(currentProgress + (delta * sensitivity), 0), 1);
       animationProgress.set(newProgress);
@@ -149,8 +179,11 @@ export default function ArchitecturalDesignPage() {
     });
   };
   
-  // Track when animation completes or reverses
+  // Track when animation completes or reverses - Only for desktop
   useEffect(() => {
+    // Skip for mobile
+    if (isMobile) return;
+    
     const unsubscribe = smoothProgress.onChange(value => {
       if (value >= 0.98 && !animationComplete && scrollDirectionRef.current > 0) {
         setAnimationComplete(true);
@@ -165,10 +198,13 @@ export default function ArchitecturalDesignPage() {
     });
     
     return () => unsubscribe();
-  }, [smoothProgress, animationComplete]);
+  }, [smoothProgress, animationComplete, isMobile]);
   
-  // Enhanced section detection and scroll position management
+  // Enhanced section detection and scroll position management - Only for desktop
   useEffect(() => {
+    // Skip for mobile
+    if (isMobile) return;
+    
     const handleScrollY = () => {
       if (!sectionRef.current || !sectionInView) return;
       
@@ -243,10 +279,13 @@ export default function ArchitecturalDesignPage() {
     return () => {
       window.removeEventListener('scroll', optimizedScrollHandler);
     };
-  }, [scrollLocked, animationComplete, sectionInView]);
+  }, [scrollLocked, animationComplete, sectionInView, isMobile]);
   
-  // Optimized wheel event listener with better performance
+  // Optimized wheel event listener with better performance - Only for desktop
   useEffect(() => {
+    // Skip for mobile
+    if (isMobile) return;
+    
     const sectionElement = sectionRef.current;
     
     if (sectionElement) {
@@ -275,126 +314,7 @@ export default function ArchitecturalDesignPage() {
         sectionElement.removeEventListener('wheel', wheelHandler);
       };
     }
-  }, [scrollLocked, animationComplete, sectionInView]);
-  
-  // Enhanced touch support with better performance and sensitivity for mobile
-  useEffect(() => {
-    const sectionElement = sectionRef.current;
-    let touchStartY = 0;
-    let lastTouchTime = 0;
-    let lastTouchY = 0;
-    let touchVelocity = 0;
-    let lastTouchTimeStamp = 0;
-    
-    const handleTouchStart = (e) => {
-      touchStartY = e.touches[0].clientY;
-      lastTouchY = touchStartY;
-      lastTouchTime = performance.now();
-      lastTouchTimeStamp = e.timeStamp;
-      touchVelocity = 0;
-    };
-    
-    const handleTouchMove = (e) => {
-      // Don't handle touch events if section isn't properly in view
-      if (!sectionInView) return;
-      
-      const currentProgress = animationProgress.get();
-      const touchY = e.touches[0].clientY;
-      const deltaY = lastTouchY - touchY; // Positive when scrolling down, negative when scrolling up
-      
-      // Calculate velocity for more responsive touch handling
-      const now = e.timeStamp;
-      const timeDelta = now - lastTouchTimeStamp;
-      if (timeDelta > 0) {
-        // Smooth out velocity calculation
-        const instantVelocity = deltaY / timeDelta;
-        touchVelocity = touchVelocity * 0.7 + instantVelocity * 0.3; // Weighted average
-      }
-      lastTouchTimeStamp = now;
-      
-      // Critical fix: Allow normal scrolling up if at the beginning of animation
-      if (currentProgress <= 0.01 && deltaY < 0) {
-        // Let default browser behavior handle the scroll
-        return;
-      }
-      
-      // Allow normal scrolling down if animation is complete
-      if (!scrollLocked && animationComplete && currentProgress >= 0.98 && deltaY > 0) {
-        return;
-      }
-      
-      // Always handle upward swipes for reverse animation when in the middle of animation
-      if (currentProgress > 0.01 && currentProgress < 0.98) {
-        // Allow re-entering animation when swiping up
-        if (animationComplete && deltaY < 0) {
-          setAnimationComplete(false);
-          setScrollLocked(true);
-        }
-      }
-      
-      // Throttle touch events for better performance
-      const now2 = performance.now();
-      if (now2 - lastTouchTime < 16) return;
-      lastTouchTime = now2;
-      
-      // Track direction
-      scrollDirectionRef.current = deltaY > 0 ? 1 : -1;
-      
-      // Update animation progress with enhanced sensitivity for mobile
-      requestAnimationFrame(() => {
-        // Base sensitivity is higher on mobile for better responsiveness
-        const baseSensitivity = deltaY < 0 ? 0.006 : 0.004;
-        
-        // Apply velocity factor for more responsive feel (but cap it to avoid jumps)
-        const velocityFactor = Math.min(Math.abs(touchVelocity) * 10, 2);
-        const sensitivity = baseSensitivity * (1 + velocityFactor);
-        
-        const newProgress = Math.min(Math.max(currentProgress + (deltaY * sensitivity), 0), 1);
-        animationProgress.set(newProgress);
-        
-        // Mark animation as complete when we reach the end
-        if (newProgress >= 0.98 && !animationComplete && scrollDirectionRef.current > 0) {
-          setAnimationComplete(true);
-          setScrollLocked(false);
-        }
-        
-        // Handle reverse animation - more responsive to upward swipes
-        if (deltaY < 0 && currentProgress < 1 && currentProgress > 0.01) {
-          if (animationComplete && newProgress < 0.98) {
-            setAnimationComplete(false);
-            setScrollLocked(true);
-          }
-        }
-      });
-      
-      lastTouchY = touchY;
-      
-      // Prevent default during animation, except at boundaries
-      if ((currentProgress > 0.01 || deltaY > 0) && 
-          (!animationComplete || currentProgress < 0.98 || deltaY < 0)) {
-        e.preventDefault();
-      }
-    };
-    
-    if (sectionElement) {
-      sectionElement.addEventListener('touchstart', handleTouchStart, { passive: true });
-      sectionElement.addEventListener('touchmove', handleTouchMove, { passive: false });
-      
-      return () => {
-        sectionElement.removeEventListener('touchstart', handleTouchStart);
-        sectionElement.removeEventListener('touchmove', handleTouchMove);
-      };
-    }
-  }, [scrollLocked, animationComplete, sectionInView]);
-  
-// Replace the transform definitions with these:
-const imageWidth = useTransform(smoothProgress, value => `${100 - (value * 40)}%`);
-const imageLeft = useTransform(smoothProgress, value => `${value * 40}%`);
-const imageHeight = useTransform(smoothProgress, value => `${100 - (value * 30)}%`);
-const imageTop = useTransform(smoothProgress, value => `${value * 15}%`);
-const textX = useTransform(smoothProgress, value => `${(value - 1) * 100}%`);
-const textOpacity = useTransform(smoothProgress, [0, 0.3, 1], [0, 0.8, 1]);
-const overlayOpacity = useTransform(smoothProgress, [0, 0.5, 1], [1, 0.3, 0]);
+  }, [scrollLocked, animationComplete, sectionInView, isMobile]);
 
   return (
     <section id="architectural-design" className="min-h-screen bg-stone-900" ref={sectionRef}>
@@ -408,173 +328,252 @@ const overlayOpacity = useTransform(smoothProgress, [0, 0.5, 1], [1, 0.3, 0]);
         </div>
       )}
       
-      {/* Main content */}
-      <div className="h-screen w-full sticky top-0" ref={contentRef}>
-        <div className="absolute inset-0">
-          <div className="flex h-full">
-            {/* Text panel */}
-            <motion.div 
-              className="absolute left-0 top-0 w-full md:w-2/5 h-full bg-stone-900 z-10"
-              style={{ 
-                x: textX,
-                opacity: textOpacity
-              }}
-            >
-              <div className="h-full p-8 md:p-12 flex flex-col justify-center">
-                <h1 className="text-4xl font-bold mb-4 text-zinc-100">Architectural Design</h1>
-                <p className="text-lg text-zinc-300 mb-8">
-                  From concept to completion, we create innovative architectural designs that balance form, function, and context.
-                </p>
-                
-                <div className="space-y-6 mb-8">
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2 text-zinc-200">Our Approach</h3>
-                    <p className="text-zinc-300">
-                      We believe in collaborative design processes that integrate client vision, site context, and sustainable practices. Our architecture responds to the environment while creating memorable spaces.
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2 text-zinc-200">Services Include</h3>
-                    <ul className="space-y-2 text-zinc-300">
-                      <li className="flex items-start">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                        </svg>
-                        Conceptual Design & Feasibility Studies
-                      </li>
-                      <li className="flex items-start">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                        </svg>
-                        Schematic Design & Development
-                      </li>
-                      <li className="flex items-start">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                        </svg>
-                        Construction Documentation
-                      </li>
-                      <li className="flex items-start">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                        </svg>
-                        Construction Administration
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                
-                <button className="flex items-center text-zinc-900 bg-white hover:bg-zinc-100 px-6 py-3 rounded-md font-medium group transition-colors">
-                  Contact Us
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" 
-                    className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
-                  </svg>
-                </button>
-              </div>
-            </motion.div>
-            
-            {/* Image - Full screen initially, then shifts right */}
-            <div className="absolute inset-0 h-full overflow-hidden will-change-transform">
-              <motion.div 
-                className="absolute inset-0 h-full will-change-transform"
-                style={{ 
-                  width: imageWidth,
-                  left: imageLeft,
-                  height: imageHeight,
-                  top: imageTop
-                }}
-              >
-                {/* Show image immediately regardless of loading state */}
-                <img 
-                  src="/images/services/1.jpg" 
-                  alt="Architectural Design" 
-                  className="w-full h-full object-cover"
-                />
-                
-                {/* Image overlay */}
-                <motion.div 
-                  className="absolute inset-0 flex items-center justify-center bg-opacity-30"
-                  style={{ opacity: overlayOpacity }}
-                >
-                  <div className="text-stone-900 text-center">
-                    <h1 className="text-6xl font-bold mb-4">
-                      Architectural Design
-                    </h1>
-                    <motion.div
-                      style={{ opacity: useTransform(smoothProgress, p => p < 0.1 ? 1 : 0) }}
-                    >
-                      <p className="text-lg mt-2">
-                        Scroll to explore
-                      </p>
-                    </motion.div>
-                  </div>
-                </motion.div>
-              </motion.div>
+      {/* Mobile Layout - Static image above, text below */}
+      {isMobile && (
+        <div className="flex flex-col w-full">
+          <div className='px-8 pt-8'>
+          <h1>
+            Architectural Design
+          </h1>
+          </div>
+          
+          {/* Image section at top */}
+          <div className="w-full h-72 md:h-72 overflow-hidden relative px-4 ">
+            <img 
+              src="/images/services/1.jpg" 
+              alt="Architectural Design" 
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 px-2 bg-opacity-30 flex items-center justify-center">
+              
             </div>
           </div>
-        </div>
-        
-        {/* Navigation indicators with dynamic visibility */}
-        <motion.div 
-          className="absolute bottom-8 right-8 flex items-center z-20 text-white transition-opacity"
-          style={{ opacity: useTransform(smoothProgress, [0, 0.1, 1], [0, 0.7, 0.7]) }}
-        >
-          <motion.button 
-            onClick={() => {
-              const currentProgress = animationProgress.get();
-              const newProgress = Math.max(currentProgress - 0.25, 0);
-              animationProgress.set(newProgress);
-              
-              // Always reset animation state when manually reversing
-              if (animationComplete) {
-                setAnimationComplete(false);
-                setScrollLocked(true);
-              }
-              
-              // Set scroll direction for consistent behavior
-              scrollDirectionRef.current = -1;
-            }}
-            className="mr-4 p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
-            aria-label="Reverse animation"
-            style={{ opacity: useTransform(smoothProgress, p => p > 0.1 ? 1 : 0) }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15m0 0l6.75 6.75M4.5 12l6.75-6.75" />
-            </svg>
-          </motion.button>
           
-          <motion.button 
-            onClick={() => {
-              const currentProgress = animationProgress.get();
-              const newProgress = Math.min(currentProgress + 0.25, 1);
-              animationProgress.set(newProgress);
+          {/* Text content below */}
+          <div className="p-6 bg-stone-900 text-white">
+            <p className="text-lg text-zinc-300 mb-6">
+              From concept to completion, we create innovative architectural designs that balance form, function, and context.
+            </p>
+            
+            <div className="space-y-6 mb-8">
+              <div>
+                <h3 className="text-xl font-semibold mb-2 text-zinc-200">Our Approach</h3>
+                <p className="text-zinc-300">
+                  We believe in collaborative design processes that integrate client vision, site context, and sustainable practices. Our architecture responds to the environment while creating memorable spaces.
+                </p>
+              </div>
               
-              // Complete animation if reaching the end
-              if (newProgress >= 0.98 && !animationComplete) {
-                setAnimationComplete(true);
-                setScrollLocked(false);
-              }
+              <div>
+                <h3 className="text-xl font-semibold mb-2 text-zinc-200">Services Include</h3>
+                <ul className="space-y-2 text-zinc-300">
+                  <li className="flex items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    Conceptual Design & Feasibility Studies
+                  </li>
+                  <li className="flex items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    Schematic Design & Development
+                  </li>
+                  <li className="flex items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    Construction Documentation
+                  </li>
+                  <li className="flex items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    Construction Administration
+                  </li>
+                </ul>
+              </div>
+            </div>
+            
+            <button className="w-full flex items-center justify-center text-zinc-900 bg-white hover:bg-zinc-100 px-6 py-3 rounded-md font-medium group transition-colors">
+              Contact Us
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" 
+                className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Desktop Layout - Animated with scroll effect */}
+      {!isMobile && (
+        <div className="h-screen w-full sticky top-0" ref={contentRef}>
+          <div className="absolute inset-0">
+            <div className="flex h-full">
+              {/* Text panel */}
+              <motion.div 
+                className="absolute left-0 top-0 w-full md:w-2/5 h-full bg-stone-900 z-10"
+                style={{ 
+                  x: textX,
+                  opacity: textOpacity
+                }}
+              >
+                <div className="h-full p-8 md:p-12 flex flex-col justify-center">
+                  <h1 className="text-4xl font-bold mb-4 text-zinc-100">Architectural Design</h1>
+                  <p className="text-lg text-zinc-300 mb-8">
+                    From concept to completion, we create innovative architectural designs that balance form, function, and context.
+                  </p>
+                  
+                  <div className="space-y-6 mb-8">
+                    <div>
+                      <h3 className="text-xl font-semibold mb-2 text-zinc-200">Our Approach</h3>
+                      <p className="text-zinc-300">
+                        We believe in collaborative design processes that integrate client vision, site context, and sustainable practices. Our architecture responds to the environment while creating memorable spaces.
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-xl font-semibold mb-2 text-zinc-200">Services Include</h3>
+                      <ul className="space-y-2 text-zinc-300">
+                        <li className="flex items-start">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                          Conceptual Design & Feasibility Studies
+                        </li>
+                        <li className="flex items-start">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                          Schematic Design & Development
+                        </li>
+                        <li className="flex items-start">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                          Construction Documentation
+                        </li>
+                        <li className="flex items-start">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                          Construction Administration
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  <button className="flex items-center text-zinc-900 bg-white hover:bg-zinc-100 px-6 py-3 rounded-md font-medium group transition-colors">
+                    Contact Us
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" 
+                      className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
+                    </svg>
+                  </button>
+                </div>
+              </motion.div>
               
-              // Set scroll direction for consistent behavior
-              scrollDirectionRef.current = 1;
-            }}
-            className="p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
-            aria-label="Advance animation"
-            style={{ opacity: useTransform(smoothProgress, p => p < 0.98 ? 1 : 0) }}
+              {/* Image - Full screen initially, then shifts right */}
+              <div className="absolute inset-0 h-full overflow-hidden will-change-transform">
+                <motion.div 
+                  className="absolute inset-0 h-full will-change-transform"
+                  style={{ 
+                    width: imageWidth,
+                    left: imageLeft,
+                    height: imageHeight,
+                    top: imageTop
+                  }}
+                >
+                  {/* Show image immediately regardless of loading state */}
+                  <img 
+                    src="/images/services/1.jpg" 
+                    alt="Architectural Design" 
+                    className="w-full h-full object-cover"
+                  />
+                  
+                  {/* Image overlay */}
+                  <motion.div 
+                    className="absolute inset-0 flex items-center justify-center bg-opacity-30"
+                    style={{ opacity: overlayOpacity }}
+                  >
+                    <div className="text-stone-900 text-center">
+                      <h1 className="text-6xl font-bold mb-4">
+                        Architectural Design
+                      </h1>
+                      <motion.div
+                        style={{ opacity: scrollPromptOpacity }}
+                      >
+                        <p className="text-lg mt-2">
+                          Scroll to explore
+                        </p>
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Navigation indicators with dynamic visibility */}
+          <motion.div 
+            className="absolute bottom-8 right-8 flex items-center z-20 text-white transition-opacity"
+            style={{ opacity: navControlsOpacity }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
-            </svg>
-          </motion.button>
-        </motion.div>
-        
-        {/* Visual indicator when section is in view */}
-        {sectionInView && (
-          <div className="fixed bottom-4 left-4 w-3 h-3 rounded-full bg-white opacity-50 z-30 animate-pulse" />
-        )}
-      </div>
+            <motion.button 
+              onClick={() => {
+                const currentProgress = animationProgress.get();
+                const newProgress = Math.max(currentProgress - 0.25, 0);
+                animationProgress.set(newProgress);
+                
+                // Always reset animation state when manually reversing
+                if (animationComplete) {
+                  setAnimationComplete(false);
+                  setScrollLocked(true);
+                }
+                
+                // Set scroll direction for consistent behavior
+                scrollDirectionRef.current = -1;
+              }}
+              className="mr-4 p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
+              aria-label="Reverse animation"
+              style={{ opacity: backButtonOpacity }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15m0 0l6.75 6.75M4.5 12l6.75-6.75" />
+              </svg>
+            </motion.button>
+            
+            <motion.button 
+              onClick={() => {
+                const currentProgress = animationProgress.get();
+                const newProgress = Math.min(currentProgress + 0.25, 1);
+                animationProgress.set(newProgress);
+                
+                // Complete animation if reaching the end
+                if (newProgress >= 0.98 && !animationComplete) {
+                  setAnimationComplete(true);
+                  setScrollLocked(false);
+                }
+                
+                // Set scroll direction for consistent behavior
+                scrollDirectionRef.current = 1;
+              }}
+              className="p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
+              aria-label="Advance animation"
+              style={{ opacity: forwardButtonOpacity }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
+              </svg>
+            </motion.button>
+          </motion.div>
+          
+          {/* Visual indicator when section is in view */}
+          {sectionInView && (
+            <div className="fixed bottom-4 left-4 w-3 h-3 rounded-full bg-white opacity-50 z-30 animate-pulse" />
+          )}
+        </div>
+      )}
     </section>
   );
 }
