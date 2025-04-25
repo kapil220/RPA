@@ -9,6 +9,8 @@ export default function ArchitecturalDesignPage() {
   const [scrollLocked, setScrollLocked] = useState(false);
   const [sectionInView, setSectionInView] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  // New state for tracking which card is active
+  const [activeCard, setActiveCard] = useState(0); // Default first card is open
   
   const contentRef = useRef(null);
   const sectionRef = useRef(null);
@@ -316,14 +318,38 @@ export default function ArchitecturalDesignPage() {
     }
   }, [scrollLocked, animationComplete, sectionInView, isMobile]);
 
+  // Card data for our new expandable card system
+  const cardData = [
+    {
+      id: 0,
+      title: "Our Approach",
+      content: "We believe in collaborative design processes that integrate client vision, site context, and sustainable practices. Our architecture responds to the environment while creating memorable spaces."
+    },
+    {
+      id: 1,
+      title: "Services Include",
+      content: [
+        "Conceptual Design & Feasibility Studies",
+        "Schematic Design & Development",
+        "Construction Documentation",
+        "Construction Administration"
+      ]
+    },
+    {
+      id: 2,
+      title: "Project Specialties",
+      content: "We specialize in residential, commercial, and institutional architecture with a focus on sustainable design principles and innovative use of materials."
+    }
+  ];
+
   return (
-    <section id="architectural-design" className="min-h-screen bg-stone-900" ref={sectionRef}>
+    <section id="architectural-design" className="min-h-screen " ref={sectionRef}>
       {/* Loading indicator */}
       {!isLoaded && (
-        <div className="fixed inset-0 flex items-center justify-center z-40 bg-zinc-900">
+        <div className="fixed inset-0 flex items-center justify-center z-40">
           <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-            <p className="text-white mt-4 font-medium">Loading...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 "></div>
+            <p className=" mt-4 font-medium">Loading...</p>
           </div>
         </div>
       )}
@@ -332,75 +358,76 @@ export default function ArchitecturalDesignPage() {
       {isMobile && (
         <div className="flex flex-col w-full">
           <div className='px-8 pt-8'>
-          <h1>
+          <h2>
             Architectural Design
-          </h1>
+          </h2>
           </div>
           
           {/* Image section at top */}
-          <div className="w-full h-72 md:h-72 overflow-hidden relative px-4 ">
+          <div className="w-full h-128 md:h-72 overflow-hidden relative px-4 -bottom-10">
             <img 
               src="/images/services/1.jpg" 
               alt="Architectural Design" 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover rounded-lg"
             />
             <div className="absolute inset-0 px-2 bg-opacity-30 flex items-center justify-center">
               
             </div>
           </div>
           
-          {/* Text content below */}
-          <div className="p-6 bg-stone-900 text-white">
-            <p className="text-lg text-zinc-300 mb-6">
+          {/* Text content below - MODIFIED FOR CARDS */}
+          <div className="p-6 bg-zinc-900/40 mx-4
+                  border border-white/10 rounded-xl shadow-xl overflow-hidden backdrop-blur-lg">
+            <p className="text-lg  mb-2">
               From concept to completion, we create innovative architectural designs that balance form, function, and context.
             </p>
             
-            <div className="space-y-6 mb-8">
-              <div>
-                <h3 className="text-xl font-semibold mb-2 text-zinc-200">Our Approach</h3>
-                <p className="text-zinc-300">
-                  We believe in collaborative design processes that integrate client vision, site context, and sustainable practices. Our architecture responds to the environment while creating memorable spaces.
-                </p>
-              </div>
-              
-              <div>
-                <h3 className="text-xl font-semibold mb-2 text-zinc-200">Services Include</h3>
-                <ul className="space-y-2 text-zinc-300">
-                  <li className="flex items-start">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            {/* Expandable Cards Section */}
+            <div className="space-y-3 mb-4 
+                   rounded-xl shadow-xl overflow-hidden backdrop-blur-lg"
+                   style={{ backgroundColor: 'rgba(31, 26, 23, 0.8)' }}>
+              {cardData.map((card, index) => (
+                <div 
+                  key={card.id}
+                  className={` rounded-md overflow-hidden transition-all duration-300 ${activeCard === index ? 'bg-zinc-800' : 'bg-zinc-800'}`}
+                >
+                  <div 
+                    className={`px-4 py-3 flex justify-between items-center cursor-pointer ${activeCard === index ? 'bg-zinc-800' : 'hover:bg-zinc-800'}`}
+                    onClick={() => setActiveCard(index)}
+                  >
+                    <h4 className="text-xl font-semibold  text-zinc-200">{card.title}</h4>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" 
+                      className={`w-5 h-5 transition-transform ${activeCard === index ? 'rotate-180' : ''}`}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                     </svg>
-                    Conceptual Design & Feasibility Studies
-                  </li>
-                  <li className="flex items-start">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                    Schematic Design & Development
-                  </li>
-                  <li className="flex items-start">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                    Construction Documentation
-                  </li>
-                  <li className="flex items-start">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                    Construction Administration
-                  </li>
-                </ul>
-              </div>
+                  </div>
+                  
+                  {/* Card Content - Expanded when active */}
+                  <div 
+                    className={`px-4 overflow-hidden transition-all duration-300 ${
+                      activeCard === index ? 'max-h-96 py-4' : 'max-h-0 py-0'
+                    }`}
+                  >
+                    {Array.isArray(card.content) ? (
+                      <ul className="space-y-2 text-zinc-300">
+                        {card.content.map((item, i) => (
+                          <li key={i} className="flex items-start">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="">{card.content}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
             
-            <button className="w-full flex items-center justify-center text-zinc-900 bg-white hover:bg-zinc-100 px-6 py-3 rounded-md font-medium group transition-colors">
-              Contact Us
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" 
-                className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
-              </svg>
-            </button>
+            
           </div>
         </div>
       )}
@@ -412,7 +439,7 @@ export default function ArchitecturalDesignPage() {
             <div className="flex h-full">
               {/* Text panel */}
               <motion.div 
-                className="absolute left-0 top-0 w-full md:w-2/5 h-full bg-stone-900 z-10"
+                className="absolute left-0 top-0 w-full md:w-2/5 h-full  z-10"
                 style={{ 
                   x: textX,
                   opacity: textOpacity
@@ -424,52 +451,52 @@ export default function ArchitecturalDesignPage() {
                     From concept to completion, we create innovative architectural designs that balance form, function, and context.
                   </p>
                   
-                  <div className="space-y-6 mb-8">
-                    <div>
-                      <h3 className="text-xl font-semibold mb-2 text-zinc-200">Our Approach</h3>
-                      <p className="text-zinc-300">
-                        We believe in collaborative design processes that integrate client vision, site context, and sustainable practices. Our architecture responds to the environment while creating memorable spaces.
-                      </p>
-                    </div>
+                  {/* MODIFIED: Expandable Cards for Desktop */}
+                  <div className="space-y-3 mb-8  
+                   rounded-xl shadow-xl overflow-hidden backdrop-blur-lg">
+              {cardData.map((card, index) => (
+                <div 
+                  key={card.id}
+                  className={` rounded-md overflow-hidden transition-all duration-300 ${activeCard === index ? 'bg-zinc-800' : 'bg-zinc-800'}`}
+                >
+                  <div 
+                    className={`px-4 py-3 flex justify-between items-center cursor-pointer ${activeCard === index ? 'bg-zinc-800' : 'hover:bg-zinc-800'}`}
                     
-                    <div>
-                      <h3 className="text-xl font-semibold mb-2 text-zinc-200">Services Include</h3>
-                      <ul className="space-y-2 text-zinc-300">
-                        <li className="flex items-start">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                          </svg>
-                          Conceptual Design & Feasibility Studies
-                        </li>
-                        <li className="flex items-start">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                          </svg>
-                          Schematic Design & Development
-                        </li>
-                        <li className="flex items-start">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                          </svg>
-                          Construction Documentation
-                        </li>
-                        <li className="flex items-start">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                          </svg>
-                          Construction Administration
-                        </li>
-                      </ul>
-                    </div>
+                    onClick={() => setActiveCard(index)}
+                  >
+                    <h4 className="text-xl font-semibold text-zinc-200">{card.title}</h4>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" 
+                      className={`w-5 h-5 transition-transform ${activeCard === index ? 'rotate-180' : ''}`}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                    </svg>
                   </div>
                   
-                  <button className="flex items-center text-zinc-900 bg-white hover:bg-zinc-100 px-6 py-3 rounded-md font-medium group transition-colors">
-                    Contact Us
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" 
-                      className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
-                    </svg>
-                  </button>
+                  {/* Card Content - Expanded when active */}
+                  <div 
+                    className={`px-4 overflow-hidden transition-all duration-300 ${
+                      activeCard === index ? 'max-h-96 py-4' : 'max-h-0 py-0'
+                    }`}
+                  >
+                    {Array.isArray(card.content) ? (
+                      <ul className="space-y-2 text-zinc-300">
+                        {card.content.map((item, i) => (
+                          <li key={i} className="flex items-start">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-zinc-300">{card.content}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+                  
+                  
                 </div>
               </motion.div>
               
@@ -492,11 +519,11 @@ export default function ArchitecturalDesignPage() {
                   />
                   
                   {/* Image overlay */}
-                  <motion.div 
+                  {/* <motion.div 
                     className="absolute inset-0 flex items-center justify-center bg-opacity-30"
                     style={{ opacity: overlayOpacity }}
                   >
-                    <div className="text-stone-900 text-center">
+                     <div className="text-stone-900 text-center">
                       <h1 className="text-6xl font-bold mb-4">
                         Architectural Design
                       </h1>
@@ -507,66 +534,15 @@ export default function ArchitecturalDesignPage() {
                           Scroll to explore
                         </p>
                       </motion.div>
-                    </div>
-                  </motion.div>
+                    </div> 
+                  </motion.div> */}
                 </motion.div>
               </div>
             </div>
           </div>
           
           {/* Navigation indicators with dynamic visibility */}
-          <motion.div 
-            className="absolute bottom-8 right-8 flex items-center z-20 text-white transition-opacity"
-            style={{ opacity: navControlsOpacity }}
-          >
-            <motion.button 
-              onClick={() => {
-                const currentProgress = animationProgress.get();
-                const newProgress = Math.max(currentProgress - 0.25, 0);
-                animationProgress.set(newProgress);
-                
-                // Always reset animation state when manually reversing
-                if (animationComplete) {
-                  setAnimationComplete(false);
-                  setScrollLocked(true);
-                }
-                
-                // Set scroll direction for consistent behavior
-                scrollDirectionRef.current = -1;
-              }}
-              className="mr-4 p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
-              aria-label="Reverse animation"
-              style={{ opacity: backButtonOpacity }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15m0 0l6.75 6.75M4.5 12l6.75-6.75" />
-              </svg>
-            </motion.button>
-            
-            <motion.button 
-              onClick={() => {
-                const currentProgress = animationProgress.get();
-                const newProgress = Math.min(currentProgress + 0.25, 1);
-                animationProgress.set(newProgress);
-                
-                // Complete animation if reaching the end
-                if (newProgress >= 0.98 && !animationComplete) {
-                  setAnimationComplete(true);
-                  setScrollLocked(false);
-                }
-                
-                // Set scroll direction for consistent behavior
-                scrollDirectionRef.current = 1;
-              }}
-              className="p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70 transition-all"
-              aria-label="Advance animation"
-              style={{ opacity: forwardButtonOpacity }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
-              </svg>
-            </motion.button>
-          </motion.div>
+        
           
           {/* Visual indicator when section is in view */}
           {sectionInView && (

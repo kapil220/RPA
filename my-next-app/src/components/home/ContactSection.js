@@ -46,7 +46,7 @@ export default function ContactSection() {
   const inputClasses = "w-full bg-zinc-800 border border-zinc-700 rounded-sm px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-300";
 
   return (
-    <section className="py-20 md:py-32 bg-zinc-900 relative">
+    <section className="py-20 md:py-32  relative">
       {/* Background with parallax effect */}
       <div className="absolute inset-0 z-0 opacity-20">
         <video
@@ -58,7 +58,7 @@ export default function ContactSection() {
         >
           <source src="/videos/contact-background.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-black/60"></div>
+        <div className="absolute inset-0 "></div>
       </div>
       
       <div className="container mx-auto px-4 relative z-10">
