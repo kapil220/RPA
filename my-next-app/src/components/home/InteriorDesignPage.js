@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useMotionValue, useSpring, useTransform } from 'framer-motion';
 
-export default function ArchitecturalDesignPage() {
+export default function InteriorDesignPage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [animationComplete, setAnimationComplete] = useState(false);
   const [scrollLocked, setScrollLocked] = useState(false);
@@ -359,14 +359,14 @@ export default function ArchitecturalDesignPage() {
         <div className="flex flex-col w-full">
           <div className='px-8 pt-8'>
           <h2>
-            Architectural Design
+            Interior Design
           </h2>
           </div>
           
           {/* Image section at top */}
           <div className="w-full h-128 md:h-72 overflow-hidden relative px-4 -bottom-10">
             <img 
-              src="/images/services/1.jpg" 
+              src="/images/services/2.jpg" 
               alt="Architectural Design" 
               className="w-full h-full object-cover rounded-lg"
             />
@@ -446,7 +446,7 @@ export default function ArchitecturalDesignPage() {
                 }}
               >
                 <div className="h-full p-8 md:p-12 flex flex-col justify-center">
-                  <h1 className="text-4xl font-bold mb-4 text-zinc-100">Architectural Design</h1>
+                  <h1 className="text-4xl font-bold mb-4 text-zinc-100">Interior Design</h1>
                   <p className="text-lg text-zinc-300 mb-8">
                     From concept to completion, we create innovative architectural designs that balance form, function, and context.
                   </p>
@@ -513,7 +513,7 @@ export default function ArchitecturalDesignPage() {
                 >
                   {/* Show image immediately regardless of loading state */}
                   <img 
-                    src="/images/services/1.jpg" 
+                    src="/images/services/2.jpg" 
                     alt="Architectural Design" 
                     className="w-full h-full object-cover"
                   />

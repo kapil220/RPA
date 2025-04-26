@@ -124,7 +124,7 @@ export default function Services() {
       </section>
 
       {/* Services Section */}
-      <section ref={sectionRef} className="py-20 bg-zinc-950">
+      <section ref={sectionRef} className="py-20 ">
         <div className="container mx-auto px-4">
           <h2 className="text-4xl font-bold text-center mb-16 text-white">What We Offer</h2>
           

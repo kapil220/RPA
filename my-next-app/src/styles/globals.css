@@ -2,7 +2,10 @@
 
 :root {
   /* Base colors */
-  --background: #1F1A17;
+  --background: #1F1F1F
+  ;
+
+
   --foreground: #E8E2D8;
   
   /* Dark Earthy Modernism Palette */
