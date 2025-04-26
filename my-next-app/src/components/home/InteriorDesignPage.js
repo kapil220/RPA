@@ -3,55 +3,51 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useMotionValue, useSpring, useTransform } from 'framer-motion';
 
-export default function InteriorDesignPage() {
+export default function ArchitecturalDesignPage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [animationComplete, setAnimationComplete] = useState(false);
   const [scrollLocked, setScrollLocked] = useState(false);
   const [sectionInView, setSectionInView] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  // New state for tracking which card is active
-  const [activeCard, setActiveCard] = useState(0); // Default first card is open
+  const [activeCard, setActiveCard] = useState(0);
   
+  // Refs
   const contentRef = useRef(null);
   const sectionRef = useRef(null);
   const scrollStartPositionRef = useRef(0);
   const previousScrollYRef = useRef(0);
-  const lastScrollTimeRef = useRef(0);
-  const scrollDirectionRef = useRef(0); // Track scroll direction: 1 for down, -1 for up
+  const scrollDirectionRef = useRef(0);
   
-  // Use motion value for smoother animations
+  // Force complete animation before proceeding
+  const forcingAnimationCompleteRef = useRef(false);
+  const animationTimeoutRef = useRef(null);
+  
+  // Animation progress
   const animationProgress = useMotionValue(0);
   
-  // Apply spring physics with optimized values for smoother animation
+  // Smoother spring with better parameters
   const smoothProgress = useSpring(animationProgress, {
-    stiffness: 60,  // Reduced from 100 for smoother animation
-    damping: 20,    // Reduced from 30 for smoother animation
-    restDelta: 0.0005  // More precise stop point
+    stiffness: 35,     // Lower for smoother movement
+    damping: 12,       // Lower for smoother transitions
+    restDelta: 0.0001,
+    mass: 0.8
   });
   
-  // Scroll tracking with improved performance
-  const { scrollY } = useScroll({
-    smooth: 16, // Smooth the scroll input for better performance
-  });
+  // Scroll tracking
+  const { scrollY } = useScroll();
   
-  // Transform definitions for desktop animation - ALWAYS create these hooks regardless of isMobile
-  const imageWidth = useTransform(smoothProgress, value => `${100 - (value * 40)}%`);
-  const imageLeft = useTransform(smoothProgress, value => `${value * 40}%`);
-  const imageHeight = useTransform(smoothProgress, value => `${100 - (value * 30)}%`);
-  const imageTop = useTransform(smoothProgress, value => `${value * 15}%`);
-  const textX = useTransform(smoothProgress, value => `${(value - 1) * 100}%`);
-  const textOpacity = useTransform(smoothProgress, [0, 0.3, 1], [0, 0.8, 1]);
-  const overlayOpacity = useTransform(smoothProgress, [0, 0.5, 1], [1, 0.3, 0]);
+  // Transform definitions
+  const imageWidth = useTransform(smoothProgress, [0, 1], ['100%', '60%']);
+  const imageLeft = useTransform(smoothProgress, [0, 1], ['0%', '40%']);
+  const imageHeight = useTransform(smoothProgress, [0, 1], ['100%', '70%']);
+  const imageTop = useTransform(smoothProgress, [0, 1], ['0%', '15%']);
+  const textX = useTransform(smoothProgress, [0, 0.3, 1], ['100%', '20%', '0%']);
+  const textOpacity = useTransform(smoothProgress, [0, 0.2, 0.4], [0, 0.5, 1]);
+  const overlayOpacity = useTransform(smoothProgress, [0, 0.3, 1], [1, 0.5, 0]);
+  const scrollPromptOpacity = useTransform(smoothProgress, [0, 0.1], [1, 0]);
   
-  // Need to move these hooks outside of JSX as well
-  const scrollPromptOpacity = useTransform(smoothProgress, p => p < 0.1 ? 1 : 0);
-  const navControlsOpacity = useTransform(smoothProgress, [0, 0.1, 1], [0, 0.7, 0.7]);
-  const backButtonOpacity = useTransform(smoothProgress, p => p > 0.1 ? 1 : 0);
-  const forwardButtonOpacity = useTransform(smoothProgress, p => p < 0.98 ? 1 : 0);
-  
-  // Page load animation
+  // Check if device is mobile
   useEffect(() => {
-    // Preload the main image
     const preloadImage = async () => {
       try {
         const img = new Image();
@@ -59,53 +55,124 @@ export default function InteriorDesignPage() {
         img.onload = () => setIsLoaded(true);
         img.onerror = () => setIsLoaded(true);
       } catch (error) {
-        console.error('Failed to preload image:', error);
         setIsLoaded(true);
       }
     };
     
     preloadImage();
-    
-    // Check if mobile on initial load
     checkIfMobile();
     
-    // Set up resize listener to detect mobile/desktop
     window.addEventListener('resize', checkIfMobile);
-    
     return () => {
       window.removeEventListener('resize', checkIfMobile);
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
     };
   }, []);
   
-  // Function to check if current viewport is mobile
   const checkIfMobile = () => {
     setIsMobile(window.innerWidth <= 768);
   };
 
-  // Enhanced Intersection Observer to properly detect when section is fully in view
+  // CRITICAL: New function to intercept scrolling completely
+  const blockScrollAndCompleteAnimation = () => {
+    if (forcingAnimationCompleteRef.current) return;
+    
+    forcingAnimationCompleteRef.current = true;
+    
+    // Lock body scrolling completely
+    document.body.style.overflow = 'hidden';
+    
+    // Force animation to complete gracefully
+    const currentValue = animationProgress.get();
+    const targetValue = 1;
+    
+    // Duration based on how much animation remains
+    const remainingFraction = 1 - currentValue;
+    const duration = Math.max(remainingFraction * 700, 300); // At least 300ms, max 700ms
+    
+    // Starting time for animation
+    const startTime = performance.now();
+    
+    // Animation function with easing
+    const animateToCompletion = (timestamp) => {
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Easing function (ease-out-cubic)
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      
+      // Calculate new value
+      const newValue = currentValue + (targetValue - currentValue) * easedProgress;
+      
+      // Update animation progress
+      animationProgress.set(newValue);
+      
+      // Continue animation until complete
+      if (progress < 1) {
+        requestAnimationFrame(animateToCompletion);
+      } else {
+        // Animation complete
+        animationProgress.set(1);
+        setAnimationComplete(true);
+        
+        // Release scroll lock after a brief delay
+        animationTimeoutRef.current = setTimeout(() => {
+          document.body.style.overflow = '';
+          forcingAnimationCompleteRef.current = false;
+          setScrollLocked(false);
+        }, 100);
+      }
+    };
+    
+    // Start the animation
+    requestAnimationFrame(animateToCompletion);
+  };
+
+  // Enhanced Intersection Observer
   useEffect(() => {
     if (!sectionRef.current) return;
     
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
+        const wasInView = sectionInView;
         
-        // Only set section in view when it's fully visible or nearly fully visible (80%+)
-        if (entry.isIntersecting && entry.intersectionRatio > 0.8) {
+        if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+          // Section coming into view
           setSectionInView(true);
+          
+          if (!wasInView) {
+            // Just entered view - set starting position
+            scrollStartPositionRef.current = window.scrollY;
+            previousScrollYRef.current = window.scrollY;
+            
+            // If animation is at beginning, lock scroll
+            if (animationProgress.get() < 0.1) {
+              setScrollLocked(true);
+            }
+          }
         } else {
+          // Section leaving view
           setSectionInView(false);
           
-          // Reset animation when scrolling away from the section
-          if (!entry.isIntersecting && animationProgress.get() > 0 && animationProgress.get() < 0.1) {
+          // If we were forcing animation, release it
+          if (forcingAnimationCompleteRef.current) {
+            document.body.style.overflow = '';
+            forcingAnimationCompleteRef.current = false;
+          }
+          
+          // Reset animation if barely started
+          if (!entry.isIntersecting && animationProgress.get() > 0 && animationProgress.get() < 0.05) {
             animationProgress.set(0);
           }
         }
       },
       {
-        root: null, // viewport
+        root: null,
         rootMargin: '0px',
-        threshold: [0, 0.1, 0.5, 0.8, 1.0] // Multiple thresholds for more precise tracking
+        threshold: [0, 0.25, 0.5, 0.75, 1.0]
       }
     );
     
@@ -116,209 +183,195 @@ export default function InteriorDesignPage() {
         observer.unobserve(sectionRef.current);
       }
     };
-  }, []);
+  }, [sectionInView]);
   
-  // Enhanced scroll handler with improved navigation and touch response - Only for desktop
-  const handleScroll = (e) => {
-    // Skip animation handling entirely if on mobile
-    if (isMobile) return;
+  // IMPROVED: Wheel event handler with velocity detection
+  const handleWheel = (e) => {
+    if (isMobile || !sectionInView) return;
     
-    // Don't handle scroll if section isn't properly in view
-    if (!sectionInView) return;
-    
-    // Get current progress value
+    // Get current animation state
     const currentProgress = animationProgress.get();
     
-    // Critical fix: Allow normal scrolling when at beginning of animation and scrolling up
+    // Allow normal scrolling at beginning/end when appropriate
     if (currentProgress <= 0.01 && e.deltaY < 0) {
-      // Allow normal scroll behavior to navigate up the page
       return;
     }
     
-    // Allow normal scrolling when animation is complete and scrolling down
-    if (!scrollLocked && animationComplete && currentProgress >= 0.99 && e.deltaY > 0) {
+    if (animationComplete && currentProgress >= 0.99 && e.deltaY > 0) {
       return;
     }
     
+    // Stop default scroll
     e.preventDefault();
-    e.stopPropagation();
     
-    // Get current time to throttle
-    const now = performance.now();
-    if (now - lastScrollTimeRef.current < 16) { // ~60fps
+    // Track scroll direction
+    scrollDirectionRef.current = e.deltaY > 0 ? 1 : -1;
+    
+    // Check for fast scrolling by examining delta magnitude
+    const isHighVelocityScroll = Math.abs(e.deltaY) > 100;
+    
+    // If scrolling down fast and animation is in progress but not near complete,
+    // we should force animation to complete smoothly
+    if (isHighVelocityScroll && e.deltaY > 0 && currentProgress > 0.1 && currentProgress < 0.9) {
+      blockScrollAndCompleteAnimation();
       return;
     }
-    lastScrollTimeRef.current = now;
     
-    // Calculate delta from wheel event
-    const delta = e.deltaY;
-    
-    // Track scroll direction explicitly
-    scrollDirectionRef.current = delta > 0 ? 1 : -1;
-    
-    // Special case for reverse animation - respond to upward scrolls when not at the top
-    if (delta < 0 && currentProgress > 0) {
-      // If animation was complete but user is scrolling back up
-      if (currentProgress >= 0.98 && animationComplete) {
-        setAnimationComplete(false);
-        setScrollLocked(true);
-      }
+    // For normal scrolling, update animation progress proportionally
+    let sensitivity = 0.002;
+    // Reduce sensitivity for fast scrolls to make them more controlled
+    if (Math.abs(e.deltaY) > 50) {
+      sensitivity *= 0.7;
     }
     
-    // Use requestAnimationFrame for smoother visual updates
-    requestAnimationFrame(() => {
-      // Update animation progress based on wheel delta with improved sensitivity
-      const sensitivity = delta < 0 ? 0.003 : 0.002;  // Standard sensitivity for desktop
-        
-      const newProgress = Math.min(Math.max(currentProgress + (delta * sensitivity), 0), 1);
-      animationProgress.set(newProgress);
-      
-      // Mark animation as complete when we reach the end
-      if (newProgress >= 0.98 && !animationComplete && scrollDirectionRef.current > 0) {
-        setAnimationComplete(true);
-        setScrollLocked(false);
-      }
-    });
+    const newProgress = Math.min(Math.max(currentProgress + (e.deltaY * sensitivity), 0), 1);
+    
+    // Apply new progress
+    animationProgress.set(newProgress);
+    
+    // Handle animation completion
+    if (newProgress >= 0.98 && !animationComplete && scrollDirectionRef.current > 0) {
+      setAnimationComplete(true);
+      setScrollLocked(false);
+    }
+    
+    // Handle animation reversal
+    if (newProgress < 0.98 && animationComplete) {
+      setAnimationComplete(false);
+      setScrollLocked(true);
+    }
   };
   
-  // Track when animation completes or reverses - Only for desktop
+  // IMPROVED: Browser scroll handling with velocity detection
   useEffect(() => {
-    // Skip for mobile
     if (isMobile) return;
     
-    const unsubscribe = smoothProgress.onChange(value => {
-      if (value >= 0.98 && !animationComplete && scrollDirectionRef.current > 0) {
-        setAnimationComplete(true);
-        setScrollLocked(false);
-      }
-      
-      // Handle animation reversal
-      if (value < 0.98 && animationComplete) {
-        setAnimationComplete(false);
-        setScrollLocked(true);
-      }
-    });
+    let lastScrollPosition = window.scrollY;
+    let lastScrollTime = performance.now();
+    let scrollVelocity = 0;
     
-    return () => unsubscribe();
-  }, [smoothProgress, animationComplete, isMobile]);
-  
-  // Enhanced section detection and scroll position management - Only for desktop
-  useEffect(() => {
-    // Skip for mobile
-    if (isMobile) return;
-    
-    const handleScrollY = () => {
+    const handleScroll = () => {
       if (!sectionRef.current || !sectionInView) return;
       
+      // Calculate scroll velocity
+      const now = performance.now();
+      const scrollDelta = window.scrollY - lastScrollPosition;
+      const timeDelta = now - lastScrollTime;
+      scrollVelocity = Math.abs(scrollDelta / timeDelta) * 100; // Scale for easier comparison
+      
+      lastScrollPosition = window.scrollY;
+      lastScrollTime = now;
+      
       const sectionTop = sectionRef.current.getBoundingClientRect().top + window.scrollY;
-      const sectionBottom = sectionTop + sectionRef.current.offsetHeight;
-      const currentScrollY = window.scrollY;
       const viewportHeight = window.innerHeight;
       
-      // Check if section is fully in viewport
-      const isFullyInView = 
-        sectionTop <= currentScrollY + viewportHeight * 0.1 && // Section top is above 10% of viewport
-        sectionBottom >= currentScrollY + viewportHeight * 0.9; // Section bottom is below 90% of viewport
+      // Check if section is prominently in view
+      const sectionInViewport = sectionTop <= window.scrollY + viewportHeight * 0.3;
+      
+      // Track scroll direction
+      scrollDirectionRef.current = scrollDelta > 0 ? 1 : -1;
+      
+      // CRITICAL: Detect fast scrolling through the section
+      if (sectionInViewport && scrollVelocity > 15 && !forcingAnimationCompleteRef.current) {
+        // User is scrolling fast through our section
+        const currentProgress = animationProgress.get();
         
-      // Start tracking scroll when user enters section
-      if (isFullyInView && !scrollLocked && animationProgress.get() < 1) {
-        scrollStartPositionRef.current = currentScrollY;
-        previousScrollYRef.current = currentScrollY;
-        setScrollLocked(true);
+        // If scrolling down fast and animation not near complete, force it to complete
+        if (scrollDelta > 0 && currentProgress > 0.1 && currentProgress < 0.9) {
+          blockScrollAndCompleteAnimation();
+          return;
+        }
       }
       
-      // When animation is complete, allow normal scrolling
-      if (animationComplete && scrollDirectionRef.current > 0) return;
-      
-      // IMPORTANT: Don't lock scrolling if we're at the beginning and trying to scroll up
-      if (animationProgress.get() <= 0.01 && 
-          previousScrollYRef.current > currentScrollY &&
-          currentScrollY < sectionTop) {
-        setScrollLocked(false);
-        return;
-      }
-      
-      // If we're locked and user is scrolling within the section, update animation progress
-      if ((scrollLocked || animationProgress.get() > 0) && isFullyInView) {
-        const scrollDelta = currentScrollY - previousScrollYRef.current;
+      // For locked scrolling during animation
+      if (scrollLocked && sectionInViewport) {
+        // Calculate animation progress
+        const scrollDelta = window.scrollY - previousScrollYRef.current;
+        const maxScrollForAnimation = viewportHeight * 0.4;
         
-        // Use a more adaptive scroll range based on viewport size
-        const maxScrollForAnimation = Math.min(viewportHeight * 0.5, 300); // Either 50% of viewport or 300px, whichever is smaller
+        // Apply progress change
+        const progressDelta = scrollDelta / maxScrollForAnimation;
+        const newProgress = Math.min(Math.max(animationProgress.get() + progressDelta, 0), 1);
         
-        // Track scroll direction
-        scrollDirectionRef.current = scrollDelta > 0 ? 1 : -1;
+        animationProgress.set(newProgress);
+        previousScrollYRef.current = window.scrollY;
         
-        // Calculate new progress with bidirectional support and adaptive sensitivity
-        const progress = animationProgress.get() + (scrollDelta / maxScrollForAnimation);
-        const clampedProgress = Math.min(Math.max(progress, 0), 1);
-        
-        requestAnimationFrame(() => {
-          animationProgress.set(clampedProgress);
-        });
-        
-        previousScrollYRef.current = currentScrollY;
-        
-        // Keep the user at the section during animation, unless we're at the very start
-        if ((clampedProgress < 0.98 || scrollDirectionRef.current < 0) && clampedProgress > 0.01) {
+        // Ensure we stay on section during animation
+        if (newProgress > 0.01 && newProgress < 0.98) {
           window.scrollTo({ top: sectionTop, behavior: 'auto' });
         }
         
-        // Crucial for reverse animation: if we were complete but now we're scrolling back
-        if (scrollDelta < 0 && animationComplete && clampedProgress < 0.98) {
+        // Complete animation if needed
+        if (newProgress >= 0.98 && !animationComplete && scrollDirectionRef.current > 0) {
+          setAnimationComplete(true);
+          setScrollLocked(false);
+        }
+        
+        // Reverse animation if needed
+        if (scrollDelta < 0 && animationComplete && newProgress < 0.95) {
           setAnimationComplete(false);
           setScrollLocked(true);
         }
       }
     };
     
-    // Optimized scroll handler with RAF for smoother performance
-    const optimizedScrollHandler = () => {
-      requestAnimationFrame(handleScrollY);
-    };
-    
-    window.addEventListener('scroll', optimizedScrollHandler, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
     
     return () => {
-      window.removeEventListener('scroll', optimizedScrollHandler);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, [scrollLocked, animationComplete, sectionInView, isMobile]);
   
-  // Optimized wheel event listener with better performance - Only for desktop
+  // Set up wheel event handler
   useEffect(() => {
-    // Skip for mobile
     if (isMobile) return;
     
     const sectionElement = sectionRef.current;
     
     if (sectionElement) {
-      const wheelHandler = (e) => {
-        // Only handle wheel events when section is fully in view
-        if (!sectionInView) return;
-        
-        // Get current progress value
-        const currentProgress = animationProgress.get();
-        
-        // If at the very beginning and scrolling up, let normal scrolling take over
-        if (currentProgress <= 0.01 && e.deltaY < 0) {
-          return;
-        }
-        
-        // Handle animation-related scrolling
-        if (currentProgress > 0 || e.deltaY > 0 || (!animationComplete && scrollLocked)) {
-          handleScroll(e);
-        }
+      sectionElement.addEventListener('wheel', handleWheel, { passive: false });
+      
+      // Touch support
+      let touchStartY = 0;
+      
+      const touchStartHandler = (e) => {
+        touchStartY = e.touches[0].clientY;
       };
       
-      // Use passive: false to enable preventDefault in the handler
-      sectionElement.addEventListener('wheel', wheelHandler, { passive: false });
+      const touchMoveHandler = (e) => {
+        if (!sectionInView) return;
+        
+        const currentY = e.touches[0].clientY;
+        const deltaY = touchStartY - currentY;
+        
+        // Prevent default only when animation is in progress
+        if (animationProgress.get() > 0 && animationProgress.get() < 1) {
+          e.preventDefault();
+          
+          const wheelEvent = new WheelEvent('wheel', {
+            deltaY: deltaY * 2,
+            bubbles: true,
+            cancelable: true
+          });
+          
+          handleWheel(wheelEvent);
+        }
+        
+        touchStartY = currentY;
+      };
+      
+      sectionElement.addEventListener('touchstart', touchStartHandler, { passive: true });
+      sectionElement.addEventListener('touchmove', touchMoveHandler, { passive: false });
       
       return () => {
-        sectionElement.removeEventListener('wheel', wheelHandler);
+        sectionElement.removeEventListener('wheel', handleWheel);
+        sectionElement.removeEventListener('touchstart', touchStartHandler);
+        sectionElement.removeEventListener('touchmove', touchMoveHandler);
       };
     }
   }, [scrollLocked, animationComplete, sectionInView, isMobile]);
 
-  // Card data for our new expandable card system
+  // Card data
   const cardData = [
     {
       id: 0,
@@ -343,125 +396,51 @@ export default function InteriorDesignPage() {
   ];
 
   return (
-    <section id="architectural-design" className="min-h-screen " ref={sectionRef}>
+    <section id="architectural-design" className="min-h-screen will-change-transform" ref={sectionRef}>
       {/* Loading indicator */}
       {!isLoaded && (
-        <div className="fixed inset-0 flex items-center justify-center z-40">
+        <div className="fixed inset-0 flex items-center justify-center z-40 bg-zinc-900 bg-opacity-80 backdrop-blur-sm">
           <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 "></div>
-            <p className=" mt-4 font-medium">Loading...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+            <p className="mt-4 font-medium text-white">Loading...</p>
           </div>
         </div>
       )}
       
-      {/* Mobile Layout - Static image above, text below */}
+      {/* Mobile Layout */}
       {isMobile && (
         <div className="flex flex-col w-full">
-          <div className='px-8 pt-8'>
-          <h2>
-            Interior Design
-          </h2>
+          <div className="px-8 pt-8">
+            <h2 className="text-3xl font-bold">Architectural Design</h2>
           </div>
           
-          {/* Image section at top */}
-          <div className="w-full h-128 md:h-72 overflow-hidden relative px-4 -bottom-10">
+          {/* Image section */}
+          <div className="w-full h-64 md:h-72 overflow-hidden -bottom-4 relative px-4 mt-4">
             <img 
-              src="/images/services/2.jpg" 
+              src="/images/services/1.jpg" 
               alt="Architectural Design" 
               className="w-full h-full object-cover rounded-lg"
+              loading="eager"
             />
-            <div className="absolute inset-0 px-2 bg-opacity-30 flex items-center justify-center">
-              
-            </div>
           </div>
           
-          {/* Text content below - MODIFIED FOR CARDS */}
-          <div className="p-6 bg-zinc-900/40 mx-4
+          {/* Text content with cards */}
+          <div className="p-6 bg-zinc-900/40 mx-4 
                   border border-white/10 rounded-xl shadow-xl overflow-hidden backdrop-blur-lg">
-            <p className="text-lg  mb-2">
+            <p className="text-lg mb-4">
               From concept to completion, we create innovative architectural designs that balance form, function, and context.
             </p>
             
-            {/* Expandable Cards Section */}
-            <div className="space-y-3 mb-4 
-                   rounded-xl shadow-xl overflow-hidden backdrop-blur-lg"
-                   style={{ backgroundColor: 'rgba(31, 26, 23, 0.8)' }}>
+            {/* Expandable Cards */}
+            <div className="space-y-3 mb-4 rounded-xl shadow-xl overflow-hidden backdrop-blur-lg"
+                 style={{ backgroundColor: 'rgba(31, 26, 23, 0.8)' }}>
               {cardData.map((card, index) => (
                 <div 
                   key={card.id}
-                  className={` rounded-md overflow-hidden transition-all duration-300 ${activeCard === index ? 'bg-zinc-800' : 'bg-zinc-800'}`}
+                  className={`rounded-md overflow-hidden transition-all duration-300 ${activeCard === index ? 'bg-zinc-800' : 'bg-zinc-800'}`}
                 >
                   <div 
                     className={`px-4 py-3 flex justify-between items-center cursor-pointer ${activeCard === index ? 'bg-zinc-800' : 'hover:bg-zinc-800'}`}
-                    onClick={() => setActiveCard(index)}
-                  >
-                    <h4 className="text-xl font-semibold  text-zinc-200">{card.title}</h4>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" 
-                      className={`w-5 h-5 transition-transform ${activeCard === index ? 'rotate-180' : ''}`}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                    </svg>
-                  </div>
-                  
-                  {/* Card Content - Expanded when active */}
-                  <div 
-                    className={`px-4 overflow-hidden transition-all duration-300 ${
-                      activeCard === index ? 'max-h-96 py-4' : 'max-h-0 py-0'
-                    }`}
-                  >
-                    {Array.isArray(card.content) ? (
-                      <ul className="space-y-2 text-zinc-300">
-                        {card.content.map((item, i) => (
-                          <li key={i} className="flex items-start">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                            </svg>
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="">{card.content}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            
-          </div>
-        </div>
-      )}
-      
-      {/* Desktop Layout - Animated with scroll effect */}
-      {!isMobile && (
-        <div className="h-screen w-full sticky top-0" ref={contentRef}>
-          <div className="absolute inset-0">
-            <div className="flex h-full">
-              {/* Text panel */}
-              <motion.div 
-                className="absolute left-0 top-0 w-full md:w-2/5 h-full  z-10"
-                style={{ 
-                  x: textX,
-                  opacity: textOpacity
-                }}
-              >
-                <div className="h-full p-8 md:p-12 flex flex-col justify-center">
-                  <h1 className="text-4xl font-bold mb-4 text-zinc-100">Interior Design</h1>
-                  <p className="text-lg text-zinc-300 mb-8">
-                    From concept to completion, we create innovative architectural designs that balance form, function, and context.
-                  </p>
-                  
-                  {/* MODIFIED: Expandable Cards for Desktop */}
-                  <div className="space-y-3 mb-8  
-                   rounded-xl shadow-xl overflow-hidden backdrop-blur-lg">
-              {cardData.map((card, index) => (
-                <div 
-                  key={card.id}
-                  className={` rounded-md overflow-hidden transition-all duration-300 ${activeCard === index ? 'bg-zinc-800' : 'bg-zinc-800'}`}
-                >
-                  <div 
-                    className={`px-4 py-3 flex justify-between items-center cursor-pointer ${activeCard === index ? 'bg-zinc-800' : 'hover:bg-zinc-800'}`}
-                    
                     onClick={() => setActiveCard(index)}
                   >
                     <h4 className="text-xl font-semibold text-zinc-200">{card.title}</h4>
@@ -471,7 +450,7 @@ export default function InteriorDesignPage() {
                     </svg>
                   </div>
                   
-                  {/* Card Content - Expanded when active */}
+                  {/* Card Content */}
                   <div 
                     className={`px-4 overflow-hidden transition-all duration-300 ${
                       activeCard === index ? 'max-h-96 py-4' : 'max-h-0 py-0'
@@ -495,12 +474,76 @@ export default function InteriorDesignPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Desktop Layout with optimized animation */}
+      {!isMobile && (
+        <div className="h-screen w-full sticky top-0 will-change-transform" ref={contentRef}>
+          <div className="absolute inset-0">
+            <div className="flex h-full will-change-transform">
+              {/* Text panel with hardware acceleration */}
+              <motion.div 
+                className="absolute left-0 top-0 w-full md:w-2/5 h-full z-10 will-change-transform"
+                style={{ 
+                  x: textX,
+                  opacity: textOpacity,
+                  willChange: 'transform, opacity'
+                }}
+              >
+                <div className="h-full p-8 md:p-12 flex flex-col justify-center">
+                  <h1 className="text-4xl font-bold mb-4 text-zinc-100">Architectural Design</h1>
+                  <p className="text-lg text-zinc-300 mb-8">
+                    From concept to completion, we create innovative architectural designs that balance form, function, and context.
+                  </p>
                   
-                  
+                  {/* Expandable Cards */}
+                  <div className="space-y-3 mb-8 rounded-xl shadow-xl overflow-hidden backdrop-blur-lg">
+                    {cardData.map((card, index) => (
+                      <div 
+                        key={card.id}
+                        className={`rounded-md overflow-hidden transition-all duration-300 ${activeCard === index ? 'bg-zinc-800' : 'bg-zinc-800'}`}
+                      >
+                        <div 
+                          className={`px-4 py-3 flex justify-between items-center cursor-pointer ${activeCard === index ? 'bg-zinc-800' : 'hover:bg-zinc-800'}`}
+                          onClick={() => setActiveCard(index)}
+                        >
+                          <h4 className="text-xl font-semibold text-zinc-200">{card.title}</h4>
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" 
+                            className={`w-5 h-5 transition-transform ${activeCard === index ? 'rotate-180' : ''}`}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                          </svg>
+                        </div>
+                        
+                        {/* Card Content */}
+                        <div 
+                          className={`px-4 overflow-hidden transition-all duration-300 ${
+                            activeCard === index ? 'max-h-96 py-4' : 'max-h-0 py-0'
+                          }`}
+                        >
+                          {Array.isArray(card.content) ? (
+                            <ul className="space-y-2 text-zinc-300">
+                              {card.content.map((item, i) => (
+                                <li key={i} className="flex items-start">
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-white mt-1">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                  </svg>
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-zinc-300">{card.content}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </motion.div>
               
-              {/* Image - Full screen initially, then shifts right */}
+              {/* Image with hardware acceleration */}
               <div className="absolute inset-0 h-full overflow-hidden will-change-transform">
                 <motion.div 
                   className="absolute inset-0 h-full will-change-transform"
@@ -508,43 +551,36 @@ export default function InteriorDesignPage() {
                     width: imageWidth,
                     left: imageLeft,
                     height: imageHeight,
-                    top: imageTop
+                    top: imageTop,
+                    willChange: 'transform, width, height, left, top'
                   }}
                 >
-                  {/* Show image immediately regardless of loading state */}
+                  {/* Optimized image loading */}
                   <img 
-                    src="/images/services/2.jpg" 
+                    src="/images/services/1.jpg" 
                     alt="Architectural Design" 
                     className="w-full h-full object-cover"
+                    style={{willChange: 'transform'}}
+                    loading="eager"
                   />
                   
-                  {/* Image overlay */}
-                  {/* <motion.div 
-                    className="absolute inset-0 flex items-center justify-center bg-opacity-30"
-                    style={{ opacity: overlayOpacity }}
+                  {/* Simplified overlay with scroll prompt */}
+                  <motion.div 
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ opacity: overlayOpacity, willChange: 'opacity' }}
                   >
-                     <div className="text-stone-900 text-center">
-                      <h1 className="text-6xl font-bold mb-4">
-                        Architectural Design
-                      </h1>
-                      <motion.div
-                        style={{ opacity: scrollPromptOpacity }}
-                      >
-                        <p className="text-lg mt-2">
-                          Scroll to explore
-                        </p>
+                    <div className="text-white text-center bg-black bg-opacity-30 p-6 rounded-lg backdrop-blur-sm">
+                      <motion.div style={{ opacity: scrollPromptOpacity }}>
+                        <p className="text-lg">Scroll to explore</p>
                       </motion.div>
-                    </div> 
-                  </motion.div> */}
+                    </div>
+                  </motion.div>
                 </motion.div>
               </div>
             </div>
           </div>
           
-          {/* Navigation indicators with dynamic visibility */}
-        
-          
-          {/* Visual indicator when section is in view */}
+          {/* Visual indicator */}
           {sectionInView && (
             <div className="fixed bottom-4 left-4 w-3 h-3 rounded-full bg-white opacity-50 z-30 animate-pulse" />
           )}
