@@ -11,7 +11,7 @@
   /* Dark Earthy Modernism Palette */
   --color-primary: #E8E2D8;     /* Light Cream */
   --color-secondary: #A6B5A3;   /* Muted Sage */
-  --color-accent: #E07A58;      /* Terracotta */
+  --color-accent: #b17949;      /* Terracotta */
   --color-dark: #1F1A17;        /* Deep Brown/Black */
   --color-darker: #121010;      /* Near Black */
   --color-medium: #483C32;      /* Dark Taupe */
@@ -48,16 +48,18 @@ h1, h2, h3, h4, h5, h6 {
 h1 {
   font-size: 3rem;
   font-weight: 700;
+  
 }
 
 h2 {
   font-size: 2.5rem;
   font-weight: 600;
+  color: var(--color-accent);
 }
 
 h3 {
   font-size: 2rem;
-  font-weight: 600;
+  font-weight: 600;color: var(--color-accent);
 }
 
 h4 {
