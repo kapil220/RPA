@@ -120,7 +120,7 @@ export default function AboutSection() {
                   transition={{ duration: 0.4 }}
                 />
               </div>
-              <div className="overflow-hidden rounded-lg h-40">
+              <div className="overflow-hidden rounded-lg h-72">
                 <motion.img 
                   src="/images/team/2.jpg" 
                   alt="Team member" 
@@ -131,7 +131,7 @@ export default function AboutSection() {
               </div>
             </div>
             <div className="space-y-3 mt-12">
-              <div className="overflow-hidden rounded-lg h-40">
+              <div className="overflow-hidden rounded-lg h-72">
                 <motion.img 
                   src="/images/team/3.jpg" 
                   alt="Team member" 
