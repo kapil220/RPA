@@ -148,8 +148,8 @@ const socialLinks = [
                   <p className="text-sm font-serif leading-relaxed">The Corenthum, Sector 62</p>
                   <p className="text-sm font-serif leading-relaxed">Noida, UP 201301</p>
                   <p className="text-sm font-serif leading-relaxed">
-                    <a href="tel:+91-120-4567890" className="text-stone-600 hover:text-stone-300 transition-colors">
-                      +91-120-4567890
+                    <a href="+91 81271 95541" className="text-stone-600 hover:text-stone-300 transition-colors">
+                      +91 81271 95541
                     </a>
                   </p>
                 </div>
@@ -160,8 +160,8 @@ const socialLinks = [
                   <p className="font-medium text-stone-300 mb-2 text-sm font-serif">Interior Office</p>
                   <p className="text-sm font-serif leading-relaxed">Vibhuti Khand, 226010</p>
                   <p className="text-sm font-serif leading-relaxed">
-                    <a href="tel:+91-522-1234567" className="text-stone-600 hover:text-stone-300 transition-colors">
-                      +91-522-1234567
+                    <a href="+91 81271 95541" className="text-stone-600 hover:text-stone-300 transition-colors">
+                      +91 81271 95541
                     </a>
                   </p>
                 </div>
@@ -180,8 +180,8 @@ const socialLinks = [
                   <p className="text-sm font-serif leading-relaxed">Shaheed Path, Gomti Nagar</p>
                   <p className="text-sm font-serif leading-relaxed">Lucknow 226010</p>
                   <p className="text-sm font-serif leading-relaxed">
-                    <a href="tel:+91-522-7654321" className="text-stone-600 hover:text-stone-300 transition-colors">
-                      +91-522-7654321
+                    <a href="+91 81271 95541" className="text-stone-600 hover:text-stone-300 transition-colors">
+                      +91 81271 95541
                     </a>
                   </p>
                 </div>
@@ -193,8 +193,8 @@ const socialLinks = [
                   <p className="text-sm font-serif leading-relaxed">C 97A, Shushant Lok III</p>
                   <p className="text-sm font-serif leading-relaxed">Sector 57, Gurugram 122003</p>
                   <p className="text-sm font-serif leading-relaxed">
-                    <a href="tel:+91-124-9876543" className="text-stone-600 hover:text-stone-300 transition-colors">
-                      +91-124-9876543
+                    <a href="tel:+91 81271 95541" className="text-stone-600 hover:text-stone-300 transition-colors">
+                      +91 81271 95541
                     </a>
                   </p>
                 </div>

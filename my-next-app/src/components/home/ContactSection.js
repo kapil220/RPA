@@ -47,22 +47,22 @@ export default function ContactSection() {
     {
       title: "Corporate Office",
       address: "2712, Tower A, The Corenthum\nSector 62, Noida, UP 201301",
-      phone: "+91-120-4567890"
+      phone: "+91 81271 95541"
     },
     {
       title: "Interior Office",
       address: "Vibhuti Khand\nLucknow 226010",
-      phone: "+91-522-1234567"
+      phone: "+91 81271 95541"
     },
     {
       title: "Design & Build Office",
       address: "F 1/20, EMAAR GOMTI GREENS\nShaheed Path, Gomti Nagar, Lucknow 226010",
-      phone: "+91-522-7654321"
+      phone: "+91 81271 95541"
     },
     {
       title: "Gurugram Associate",
       address: "C 97A, Shushant Lok III\nSector 57, Gurugram 122003",
-      phone: "+91-124-9876543"
+      phone: "+91 81271 95541"
     }
   ];
 
